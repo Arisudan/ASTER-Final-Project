@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jarvis Infotainment System</title>
+  <title>ASTER</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css" />
   <link rel="stylesheet" href="style.css" />
   <script type="text/javascript" src="/eel.js"></script>
@@ -12,151 +14,334 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
   <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+  <script src="https://sdk.scdn.co/spotify-player.js"></script>
   <script defer src="main.js"></script>
 </head>
-<body>
+<body data-mode="ambient">
   <main class="app-shell">
-    <section id="loader" class="screen screen--active">
-      <div class="loader-card">
-        <img class="brand-art" src="assets/jarvis-logo.svg" alt="Jarvis logo" />
-        <div class="loader-ring"></div>
-        <h1>Initializing Jarvis...</h1>
-        <p>Booting assistant services, web layer, and security gate.</p>
+    <div id="liveRegion" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+    <section id="loader" class="screen screen--active screen--ambient">
+      <div class="glass-card loader-card" data-aos="fade-up">
+        <div class="brand-badge brand-badge--ambient">A</div>
+        <p class="eyebrow">ASTER</p>
+        <h1>Booting Infotainment Core</h1>
+        <p class="lead">Starting voice, face authentication, Spotify, and vehicle services.</p>
+        <div class="loader-visual">
+          <div class="loader-ring"></div>
+          <div class="loader-pulse"></div>
+        </div>
         <div class="loader-track"><span></span></div>
       </div>
     </section>
 
-    <section id="face-auth" class="screen screen--hidden">
-      <div class="auth-panel">
-        <img class="auth-art" src="assets/face-scan.svg" alt="Face scan" />
-        <div class="scan-orb">
-          <span class="scan-line"></span>
-          <span class="scan-line scan-line--alt"></span>
+    <section id="face-auth" class="screen screen--hidden screen--ambient">
+      <div class="auth-shell glass-card" data-aos="zoom-in">
+        <div class="auth-hero">
+          <div class="scan-orb">
+            <div class="scan-ring"></div>
+            <div class="scan-ring scan-ring--alt"></div>
+            <div class="scan-core"></div>
+          </div>
+          <div>
+            <p class="eyebrow">Dark Access</p>
+            <h2>Face Authentication Required</h2>
+            <p id="auth-status" class="status-copy">Align your face with the camera to continue.</p>
+          </div>
         </div>
-        <h2>Face Authentication Required</h2>
-        <p id="auth-status">Align your face with the camera to continue.</p>
         <div class="auth-actions">
-          <button id="enrollButton" type="button">Enroll Face</button>
-          <button id="faceEnrollButton" type="button">Capture Face</button>
+          <button id="authEnrollButton" type="button" class="btn btn--soft">Register Face</button>
+          <button id="authSettingsButton" type="button" class="btn btn--ghost">Settings</button>
         </div>
       </div>
     </section>
 
-    <section id="face-enrollment" class="screen screen--hidden">
-      <div class="auth-panel enrollment-panel">
-        <div class="scan-orb scan-orb--enroll">
-          <span class="scan-line"></span>
-          <span class="scan-line scan-line--alt"></span>
+    <section id="face-enrollment" class="screen screen--hidden screen--ambient">
+      <div class="auth-shell glass-card enrollment-shell" data-aos="zoom-in">
+        <div class="auth-hero">
+          <div class="scan-orb scan-orb--small">
+            <div class="scan-ring"></div>
+            <div class="scan-ring scan-ring--alt"></div>
+            <div class="scan-core"></div>
+          </div>
+          <div>
+            <p class="eyebrow">Face Registration</p>
+            <h2>Enrol New User</h2>
+            <p id="enrollment-status" class="status-copy">Enter a profile name and capture a face sample.</p>
+          </div>
         </div>
-        <h2>Face Enrollment</h2>
-        <p id="enrollment-status">Enter a name, then capture a face profile.</p>
-        <div class="enrollment-form">
+        <div class="form-row">
           <input id="enrollmentName" type="text" placeholder="Profile name" autocomplete="off" />
           <div class="auth-actions">
-            <button id="enrollmentSubmit" type="button">Save Face</button>
-            <button id="enrollmentCancel" type="button">Back</button>
+            <button id="enrollmentSubmit" type="button" class="btn btn--primary">Save Face</button>
+            <button id="enrollmentCancel" type="button" class="btn btn--ghost">Back</button>
           </div>
         </div>
       </div>
     </section>
 
-    <section id="face-auth-success" class="screen screen--hidden">
-      <div class="success-panel">
+    <section id="face-auth-success" class="screen screen--hidden screen--ambient">
+      <div class="success-card glass-card" data-aos="fade-up">
         <div class="success-mark">✓</div>
+        <p class="eyebrow">Access Granted</p>
         <h2>Authentication Successful</h2>
-        <p>Access granted. Welcome to Jarvis.</p>
+        <p class="lead">Welcome to ASTER.</p>
       </div>
     </section>
 
-    <section id="start" class="screen screen--hidden">
-      <div id="main-dashboard" class="dashboard">
-        <header class="topbar">
-          <div class="brand-block">
-            <div class="brand-mark"></div>
+    <section id="main-dashboard" class="screen screen--hidden screen--driving">
+      <div class="dashboard-shell">
+        <header class="topbar glass-panel">
+          <div class="topbar-brand">
+            <div class="brand-badge">J</div>
             <div>
-              <span class="brand-kicker">AI Enhanced Infotainment System</span>
-              <h1>Jarvis</h1>
+              <p class="eyebrow">Automotive AI Infotainment</p>
+              <h1>ASTER</h1>
             </div>
           </div>
-
-          <div class="topbar-widgets">
-            <div class="widget">
-              <span class="widget-label">Time</span>
-              <strong id="live-clock">--:-- --</strong>
-            </div>
-            <div class="widget">
-              <span class="widget-label">Date</span>
-              <strong id="live-date">---</strong>
-            </div>
-            <div class="widget weather-widget">
-              <span class="widget-label">Weather</span>
-              <strong id="weather-value">Standby</strong>
-            </div>
+          <div class="topbar-meta">
+            <div class="meta-pill"><span>Time</span><strong id="live-clock">--:-- --</strong></div>
+            <div class="meta-pill"><span>Date</span><strong id="live-date">---</strong></div>
+            <div class="meta-pill meta-pill--spotify"><span>Spotify</span><strong id="spotifyConnectionState">Disconnected</strong></div>
+            <button id="modeToggleButton" type="button" class="mode-toggle-button" aria-label="Toggle dark mode intensity">Dark Mode</button>
           </div>
         </header>
 
-        <section class="hero-grid">
-          <aside class="side-panel side-panel--left" data-aos="fade-right">
-            <div class="panel-card">
-              <h3>Navigation</h3>
-              <button type="button" data-action="open maps">Maps</button>
-              <button type="button" data-action="open youtube">Media</button>
-              <button type="button" data-action="open google">Browser</button>
-            </div>
-            <div class="panel-card">
-              <h3>Quick Access</h3>
-              <button type="button" data-action="play music">Music</button>
-              <button type="button" data-action="open camera">Camera</button>
-              <button type="button" data-action="call">Calls</button>
-            </div>
-          </aside>
-
-          <div class="orb-stage">
-            <div class="orb-glow"></div>
-            <div class="orb">
-              <div class="orb-core"></div>
-              <div class="orb-rings"></div>
-              <div class="orb-wave orb-wave--one"></div>
-              <div class="orb-wave orb-wave--two"></div>
-            </div>
-            <div class="orb-caption">
-              <span id="command-status">Awaiting voice command</span>
-              <small id="response-status">System ready.</small>
-            </div>
-          </div>
-
-          <aside class="command-column side-panel side-panel--right" data-aos="fade-left">
-            <div class="panel-card stats-panel">
-              <h3>System Stats</h3>
-              <canvas id="statsChart" width="320" height="180"></canvas>
-              <div class="metric-grid">
-                <div><span>CPU</span><strong id="cpuMetric">18%</strong></div>
-                <div><span>Memory</span><strong id="memoryMetric">42%</strong></div>
-                <div><span>Network</span><strong id="networkMetric">Normal</strong></div>
+        <section class="dashboard-grid">
+          <aside class="left-column" data-aos="fade-right">
+            <article class="panel-card glass-panel seat-card">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Driver Controls</p>
+                  <h3>Seat / Cabin</h3>
+                </div>
+                <span class="panel-tag">Dark</span>
               </div>
-            </div>
+              <div class="seat-visual">
+                <div class="seat-line seat-line--one"></div>
+                <div class="seat-line seat-line--two"></div>
+                <div class="seat-line seat-line--three"></div>
+              </div>
+              <div class="seat-actions">
+                <button type="button" data-seat-action="lights" class="chip-button">Lights</button>
+                <button type="button" data-seat-action="climate" class="chip-button">Climate</button>
+                <button type="button" data-seat-action="settings" class="chip-button">Settings</button>
+              </div>
+              <div class="status-row">
+                <div><span>Lights</span><strong id="seatLightsState">Off</strong></div>
+                <div><span>Climate</span><strong id="climateState">72°F</strong></div>
+              </div>
+            </article>
 
-            <div class="command-card">
-              <h2>Voice Command</h2>
-              <div class="voice-input-row">
+            <article class="panel-card glass-panel voice-card">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Voice Assistant</p>
+                  <h3>Command Center</h3>
+                </div>
+                <span class="panel-tag">Live</span>
+              </div>
+              <div class="voice-status">
+                <div class="voice-orb" id="voiceOrb"></div>
+                <div>
+                  <p id="recognitionText">Awaiting voice command.</p>
+                  <small id="responseText">System ready.</small>
+                </div>
+              </div>
+              <div class="voice-row">
                 <input id="voiceCommand" type="text" placeholder="Speak or type a command" autocomplete="off" />
-                <button id="micButton" class="mic-button" type="button" aria-label="Capture voice command">
+                <button id="micButton" type="button" class="mic-button" aria-label="Capture voice command">
                   <span></span>
                 </button>
               </div>
-              <div class="status-box">
-                <p>Last command</p>
-                <strong id="last-command">None</strong>
+              <div class="voice-actions">
+                <button type="button" id="voiceAssistButton" class="btn btn--primary">Voice Assistant</button>
+                <button type="button" id="homeButton" class="btn btn--ghost">Home</button>
               </div>
-              <div class="status-box">
-                <p>Assistant reply</p>
-                <strong id="last-response">Waiting for input</strong>
+            </article>
+          </aside>
+
+          <section class="center-column" data-aos="zoom-in">
+            <article class="panel-card glass-panel car-card">
+              <div class="panel-heading panel-heading--center">
+                <div>
+                  <p class="eyebrow">Vehicle State</p>
+                  <h3>Driving View</h3>
+                </div>
+                <div class="gear-strip" id="gearStrip">
+                  <span data-gear="P">P</span>
+                  <span data-gear="R">R</span>
+                  <span data-gear="N">N</span>
+                  <span data-gear="D">D</span>
+                </div>
               </div>
-            </div>
+
+              <div class="car-visual">
+                <div class="car-top"></div>
+                <div class="car-body"></div>
+                <div class="car-cabin"></div>
+                <div class="car-light car-light--left"></div>
+                <div class="car-light car-light--right"></div>
+                <div class="indicator indicator--left"></div>
+                <div class="indicator indicator--right"></div>
+              </div>
+
+              <div class="drive-metrics">
+                <div class="speed-block">
+                  <span class="eyebrow">Speed</span>
+                  <div class="speed-readout"><strong id="speedValue">0</strong><span>mph</span></div>
+                </div>
+                <div class="gauge-wrap">
+                  <canvas id="speedGauge" width="260" height="260"></canvas>
+                </div>
+                <div class="drive-stack">
+                  <div class="metric-card"><span>Battery</span><strong id="batteryValue">91%</strong></div>
+                  <div class="metric-card"><span>Autopilot</span><strong id="autopilotValue">Standby</strong></div>
+                  <div class="metric-card"><span>Drive Mode</span><strong id="modeValue">Dark+</strong></div>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <aside class="right-column" data-aos="fade-left">
+            <article class="panel-card glass-panel spotify-card">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Spotify Player</p>
+                  <h3>Now Playing</h3>
+                </div>
+                <button id="connectSpotifyButton" type="button" class="chip-button chip-button--primary">Connect Spotify</button>
+              </div>
+
+              <div class="spotify-artwork-wrap">
+                <img id="spotifyArtwork" alt="Album cover" class="spotify-artwork" src="https://via.placeholder.com/320x320?text=Spotify" />
+                <div class="spotify-artwork-glow"></div>
+              </div>
+
+              <div class="spotify-details">
+                <strong id="spotifyTrackTitle">Spotify is not connected</strong>
+                <span id="spotifyTrackArtist">Sign in to start playback.</span>
+                <small id="spotifyTrackAlbum">Web Playback SDK ready.</small>
+              </div>
+
+              <div class="progress-shell">
+                <div class="progress-bar"><span id="spotifyProgressFill"></span></div>
+                <div class="progress-meta"><span id="spotifyProgressCurrent">0:00</span><span id="spotifyProgressTotal">0:00</span></div>
+              </div>
+
+              <div class="spotify-controls">
+                <button id="spotifyPrevButton" type="button" class="control-button">⏮</button>
+                <button id="spotifyPlayPauseButton" type="button" class="control-button control-button--primary">▶</button>
+                <button id="spotifyNextButton" type="button" class="control-button">⏭</button>
+              </div>
+
+              <div class="spotify-options">
+                <label><input id="spotifyShuffleToggle" type="checkbox" /> Shuffle</label>
+                <label><input id="spotifyRepeatToggle" type="checkbox" /> Repeat</label>
+              </div>
+
+              <div class="spotify-search">
+                <input id="spotifySearchInput" type="text" placeholder="Search a song to play" />
+                <button id="spotifySearchButton" type="button" class="btn btn--primary">Play</button>
+              </div>
+
+              <div class="volume-row">
+                <span>Volume</span>
+                <input id="spotifyVolumeSlider" type="range" min="0" max="100" value="65" />
+              </div>
+            </article>
+
+            <article class="panel-card glass-panel map-card">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Navigation</p>
+                  <h3>Route Preview</h3>
+                </div>
+                <button id="openMapsButton" type="button" class="chip-button">Open Maps</button>
+              </div>
+              <div class="map-visual">
+                <div class="map-grid"></div>
+                <div class="map-road map-road--main"></div>
+                <div class="map-road map-road--cross"></div>
+                <div class="map-route"></div>
+                <div class="map-pin"></div>
+              </div>
+              <div class="map-footer">
+                <span>Destination</span>
+                <strong id="mapStatus">Ready for navigation</strong>
+              </div>
+            </article>
           </aside>
         </section>
+
+        <nav class="bottom-bar glass-panel">
+          <button type="button" id="bottomHomeButton">Home</button>
+          <button type="button" id="bottomVoiceButton">Voice Assistant</button>
+          <button type="button" id="bottomMusicButton">Music</button>
+          <button type="button" id="bottomMapsButton">Maps</button>
+          <button type="button" id="bottomSettingsButton">Settings</button>
+        </nav>
       </div>
     </section>
+
+    <div id="settingsDrawer" class="settings-drawer" aria-hidden="true">
+      <div class="settings-drawer__sheet glass-card" data-aos="fade-left">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">System Settings</p>
+            <h3>Control Center</h3>
+          </div>
+          <button id="closeSettingsButton" type="button" class="chip-button">Close</button>
+        </div>
+
+        <div class="drawer-grid">
+          <section class="drawer-section">
+            <h4>Assistant</h4>
+            <label>
+              <span>Name</span>
+              <input id="assistantNameInput" type="text" />
+            </label>
+            <label>
+              <span>Speech Rate</span>
+              <input id="speechRateInput" type="number" min="120" max="240" step="1" />
+            </label>
+            <label class="toggle-row"><input id="wakeWordToggle" type="checkbox" /> Wake word enabled</label>
+          </section>
+
+          <section class="drawer-section">
+            <h4>Spotify</h4>
+            <label>
+              <span>Volume</span>
+              <input id="defaultSpotifyVolumeInput" type="number" min="0" max="100" step="1" />
+            </label>
+            <label>
+              <span>Default Search</span>
+              <input id="defaultSpotifyQueryInput" type="text" />
+            </label>
+            <button id="saveSettingsButton" type="button" class="btn btn--primary">Save Settings</button>
+          </section>
+
+          <section class="drawer-section drawer-section--full">
+            <h4>Face Profiles</h4>
+            <div id="faceProfilesList" class="profile-list"></div>
+            <button id="openEnrollmentButton" type="button" class="btn btn--soft">Enroll New Face</button>
+          </section>
+
+          <section class="drawer-section drawer-section--full">
+            <h4>User Presets</h4>
+            <div id="settingsPresetsList" class="profile-list"></div>
+            <div class="drawer-actions">
+              <button id="savePresetButton" type="button" class="btn btn--primary">Save My Preset</button>
+              <button id="refreshPresetsButton" type="button" class="btn btn--ghost">Refresh</button>
+            </div>
+          </section>
+
+          <section class="drawer-section drawer-section--full">
+            <h4>Spotify Status</h4>
+            <div id="spotifyDeviceStatus" class="drawer-status">Spotify not connected.</div>
+          </section>
+        </div>
+      </div>
+    </div>
   </main>
 </body>
 </html>

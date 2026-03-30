@@ -31,6 +31,29 @@ _tts_queue: "queue.Queue[str | None]" = queue.Queue()
 _sound_queue: "queue.Queue[str | None]" = queue.Queue()
 _audio_started = False
 _audio_lock = threading.Lock()
+ANDROID_APP_ALIASES = {
+    "youtube": "com.google.android.youtube",
+    "google maps": "com.google.android.apps.maps",
+    "maps": "com.google.android.apps.maps",
+    "spotify": "com.spotify.music",
+    "phone": "com.google.android.dialer",
+    "messages": "com.google.android.apps.messaging",
+    "whatsapp": "com.whatsapp",
+    "camera": "com.android.camera",
+    "chrome": "com.android.chrome",
+    "gallery": "com.google.android.apps.photos",
+}
+MEDIA_KEYCODES = {
+    "play": 126,
+    "pause": 127,
+    "play_pause": 85,
+    "next": 87,
+    "previous": 88,
+    "stop": 86,
+    "volume_up": 24,
+    "volume_down": 25,
+    "mute": 164,
+}
 
 
 def db_init():
@@ -58,7 +81,10 @@ def _tts_worker() -> None:
     voices = engine.getProperty("voices") or []
     if voices:
         engine.setProperty("voice", voices[0].id)
-    engine.setProperty("rate", 180)
+    try:
+        engine.setProperty("rate", int(db.get_setting("speech_rate", "180") or 180))
+    except Exception:
+        engine.setProperty("rate", 180)
 
     while True:
         text = _tts_queue.get()
@@ -179,6 +205,29 @@ def hotword(wake_queue=None):
     hotword_process(wake_queue)
 
 
+def _adb_base_command() -> list[str]:
+    command = ["adb"]
+    device_serial = db.get_setting("android_device_serial", "")
+    if device_serial:
+        command.extend(["-s", device_serial.strip()])
+    return command
+
+
+def _run_adb(arguments: list[str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(_adb_base_command() + arguments, capture_output=True, text=True, check=False)
+
+
+def _resolve_android_package(package_name: str) -> str:
+    resolved_name = str(package_name or "").strip()
+    if not resolved_name:
+        return ""
+
+    alias = ANDROID_APP_ALIASES.get(resolved_name.lower())
+    if alias:
+        return alias
+    return resolved_name
+
+
 def openai_query(prompt):
     prompt = str(prompt or "").strip()
     if not prompt:
@@ -217,18 +266,34 @@ def openai_query(prompt):
         return f"I could not generate a response. {exc}"
 
 
+def list_android_devices():
+    try:
+        result = _run_adb(["devices"])
+        if result.returncode != 0:
+            return result.stderr.strip() or "Unable to list Android devices."
+        return result.stdout.strip() or "No Android devices detected."
+    except Exception as exc:
+        return f"Unable to list Android devices. {exc}"
+
+
 def open_android_app(package_name: str):
-    package_name = str(package_name or "").strip()
+    package_name = _resolve_android_package(package_name)
     if not package_name:
         return "No Android package name was provided."
 
-    commands = [
-        ["adb", "shell", "monkey", "-p", package_name, "-c", "android.intent.category.LAUNCHER", "1"],
-        ["adb", "shell", "am", "start", "-n", package_name],
-    ]
+    commands = []
+    if "/" in package_name:
+        commands.append(["shell", "am", "start", "-n", package_name])
+
+    commands.extend(
+        [
+            ["shell", "monkey", "-p", package_name, "-c", "android.intent.category.LAUNCHER", "1"],
+            ["shell", "cmd", "package", "resolve-activity", "--brief", package_name],
+        ]
+    )
     for command in commands:
         try:
-            result = subprocess.run(command, capture_output=True, text=True, check=False)
+            result = _run_adb(command)
             if result.returncode == 0:
                 return f"Opening Android app {package_name}."
         except Exception:
@@ -242,8 +307,7 @@ def send_sms(number: str, message: str):
     if not number or not message:
         return "Please provide a number and a message."
 
-    command = [
-        "adb",
+    command = _adb_base_command() + [
         "shell",
         "am",
         "start",
@@ -265,6 +329,29 @@ def send_sms(number: str, message: str):
     except Exception:
         pass
     return "SMS sending is unavailable on this device."
+
+
+def control_android_media(action: str):
+    action_name = str(action or "").strip().lower().replace(" ", "_")
+    keycode = MEDIA_KEYCODES.get(action_name)
+    if keycode is None:
+        return f"Unsupported media action: {action}."
+
+    try:
+        result = _run_adb(["shell", "input", "keyevent", str(keycode)])
+        if result.returncode == 0:
+            return f"Android media action {action_name} sent."
+        error_text = result.stderr.strip() or result.stdout.strip()
+        if error_text:
+            return error_text
+    except Exception as exc:
+        return f"Android media control failed. {exc}"
+
+    return "Android media control is unavailable on this device."
+
+
+def open_android_app_by_name(app_name: str):
+    return open_android_app(app_name)
 
 
 def open_url(url: str):

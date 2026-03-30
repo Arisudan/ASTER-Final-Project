@@ -7,3 +7,5 @@ __pycache__/
 jarvis.db
 jarvis.db-shm
 jarvis.db-wal
+.spotify_cache
+.spotify_cache*

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import random
+import re
 import subprocess
 import webbrowser
 from datetime import datetime
@@ -12,8 +13,12 @@ import eel
 import requests
 
 from Engine import db
-from Engine.Features import open_android_app, send_sms, speak, takecommand as feature_takecommand
+from Engine.Features import control_android_media, list_android_devices, open_android_app, send_sms, speak, takecommand as feature_takecommand
 from Engine.ai_memory import generate_response
+from Engine.spotify_backend import next_track as spotify_next_track
+from Engine.spotify_backend import pause_music as spotify_pause_music
+from Engine.spotify_backend import play_music as spotify_play_music
+from Engine.spotify_backend import previous_track as spotify_previous_track
 
 
 def takecommand():
@@ -42,6 +47,15 @@ def _play_first_music_track():
     return "No music library found."
 
 
+def _play_spotify_or_local(query: str | None = None):
+    spotify_result = spotify_play_music(query)
+    if isinstance(spotify_result, dict) and spotify_result.get("ok"):
+        return spotify_result.get("message", "Playing music on Spotify.")
+    if query and str(query).strip():
+        return _play_first_music_track()
+    return spotify_result.get("message", "Spotify playback is unavailable.") if isinstance(spotify_result, dict) else "Spotify playback is unavailable."
+
+
 def _open_camera():
     try:
         os.system('start microsoft.windows.camera:')
@@ -58,7 +72,7 @@ def _open_camera():
         success, frame = capture.read()
         if not success:
             break
-        cv2.imshow("Jarvis Camera", frame)
+        cv2.imshow("ASTER Camera", frame)
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
         if (datetime.now() - start_time).seconds > 15:
@@ -72,6 +86,32 @@ def _open_camera():
 def _navigation_simulation():
     webbrowser.open("https://www.google.com/maps")
     return "Starting navigation simulation on Google Maps."
+
+
+def _extract_android_target(query_text: str) -> str:
+    cleaned_query = query_text
+    patterns = [
+        r"^(?:open|launch|start)\s+(?:android\s+)?app\s+(.+)$",
+        r"^(?:open|launch|start)\s+(.+?)\s+app$",
+        r"^(?:open|launch|start)\s+(.+)$",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, cleaned_query)
+        if match:
+            return match.group(1).strip()
+    return ""
+
+
+def _parse_sms_command(query_text: str):
+    sms_patterns = [
+        r"^(?:send\s+)?sms(?:\s+to)?\s+(?P<number>[\d+()\- ]+)\s+(?P<message>.+)$",
+        r"^(?:text|message)\s+(?P<number>[\d+()\- ]+)\s+(?P<message>.+)$",
+    ]
+    for pattern in sms_patterns:
+        match = re.search(pattern, query_text)
+        if match:
+            return match.group("number").strip(), match.group("message").strip()
+    return "", ""
 
 
 @eel.expose
@@ -97,11 +137,35 @@ def allCommands(query, source="voice"):
         elif "what time is it" in query_text or query_text == "time" or query_text.startswith("time"):
             response = f"The time is {datetime.now().strftime('%I:%M %p')}"
 
+        elif "connect spotify" in query_text or "spotify connect" in query_text:
+            from Engine.spotify_backend import connect_spotify
+
+            spotify_result = connect_spotify()
+            response = spotify_result.get("message", "Spotify connection attempted.")
+
         elif "play music" in query_text or query_text == "music":
-            response = _play_first_music_track()
+            response = _play_spotify_or_local()
+
+        elif query_text.startswith("play "):
+            response = _play_spotify_or_local(query_text.removeprefix("play ").strip())
+
+        elif "pause music" in query_text or query_text == "pause music":
+            spotify_result = spotify_pause_music()
+            response = spotify_result.get("message", "Music paused.")
+
+        elif "next song" in query_text or "next track" in query_text:
+            spotify_result = spotify_next_track()
+            response = spotify_result.get("message", "Skipped to next track.")
+
+        elif "previous song" in query_text or "previous track" in query_text:
+            spotify_result = spotify_previous_track()
+            response = spotify_result.get("message", "Went to previous track.")
 
         elif "navigation" in query_text:
             response = _navigation_simulation()
+
+        elif "adb devices" in query_text or "device status" in query_text:
+            response = list_android_devices()
 
         elif "weather" in query_text:
             response = "Weather service unavailable."
@@ -127,12 +191,36 @@ def allCommands(query, source="voice"):
         elif "open camera" in query_text or query_text == "camera":
             response = _open_camera()
 
-        elif "send message" in query_text or "sms" in query_text:
-            response = send_sms("", "")
+        elif "send message" in query_text or query_text.startswith("sms"):
+            number, message = _parse_sms_command(query_text)
+            response = send_sms(number, message)
 
-        elif "open android app" in query_text or query_text.startswith("open app "):
-            package = query_text.replace("open android app", "").replace("open app", "").strip()
+        elif any(query_text.startswith(prefix) for prefix in ("open android app", "open app", "launch app", "launch ", "start app")):
+            package = _extract_android_target(query_text)
+            if not package:
+                package = db.get_setting("android_default_package", "") or ""
             response = open_android_app(package)
+
+        elif any(phrase in query_text for phrase in ("play media", "resume media", "media play", "play phone")):
+            response = control_android_media("play_pause")
+
+        elif any(phrase in query_text for phrase in ("pause media", "pause phone", "stop media")):
+            response = control_android_media("pause")
+
+        elif any(phrase in query_text for phrase in ("next track", "skip track", "media next")):
+            response = control_android_media("next")
+
+        elif any(phrase in query_text for phrase in ("previous track", "media previous", "back track")):
+            response = control_android_media("previous")
+
+        elif any(phrase in query_text for phrase in ("volume up", "increase volume", "louder")):
+            response = control_android_media("volume_up")
+
+        elif any(phrase in query_text for phrase in ("volume down", "decrease volume", "lower volume")):
+            response = control_android_media("volume_down")
+
+        elif "mute" in query_text:
+            response = control_android_media("mute")
 
         elif "shutdown system" in query_text:
             response = "Shutting down the system."
@@ -143,15 +231,6 @@ def allCommands(query, source="voice"):
 
         elif "call" in query_text:
             response = "Calling via ADB is not yet configured."
-
-        elif "volume up" in query_text:
-            response = "Volume up is not yet configured."
-
-        elif "volume down" in query_text:
-            response = "Volume down is not yet configured."
-
-        elif "mute" in query_text:
-            response = "Mute is not yet configured."
 
         else:
             response = generate_response(query_text)

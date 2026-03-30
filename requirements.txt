@@ -12,3 +12,4 @@ pvporcupine
 pygame
 deepface
 ultralytics
+spotipy

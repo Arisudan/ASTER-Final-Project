@@ -203,17 +203,38 @@ def _capture_face_encoding(window_title, instruction_text, timeout_seconds=45):
     return None
 
 
+def _capture_multiple_encodings(window_title, instruction_text, sample_count=3, timeout_seconds=60):
+    captured_samples = []
+    deadline = time.time() + timeout_seconds
+
+    while len(captured_samples) < sample_count and time.time() < deadline:
+        encoding = _capture_face_encoding(window_title, f"{instruction_text} ({len(captured_samples) + 1}/{sample_count})", 20)
+        if encoding is None:
+            continue
+        captured_samples.append(encoding)
+
+    if not captured_samples:
+        return None
+
+    return captured_samples
+
+
 def EnrollFace(name):
     profile_name = str(name or "").strip()
     if not profile_name:
         return 0
 
-    encoding = _capture_face_encoding("Jarvis Face Enrollment", f"Enroll {profile_name}: look at the camera")
-    if encoding is None:
+    encodings = _capture_multiple_encodings(
+        "ASTER Face Enrollment",
+        f"Enroll {profile_name}: look at the camera",
+        sample_count=3,
+        timeout_seconds=90,
+    )
+    if not encodings:
         return 0
 
     try:
-        db.save_face_profile(profile_name, pickle.dumps(encoding))
+        db.save_face_profile(profile_name, pickle.dumps(encodings))
         return 1
     except Exception as exc:
         print(f"Failed to save face profile: {exc}")
@@ -276,7 +297,7 @@ def AuthenticateFace():
                     if name != "Unknown":
                         capture.release()
                         cv2.destroyAllWindows()
-                        return 1
+                        return name
             else:
                 cascade = _load_haar_cascade()
                 face_box, face_region = _extract_face_region(frame, cascade)
@@ -289,11 +310,11 @@ def AuthenticateFace():
                         if name != "Unknown":
                             capture.release()
                             cv2.destroyAllWindows()
-                            return 1
+                            return name
 
-            cv2.putText(frame, "Jarvis Face Scan Active", (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 212, 255), 2)
+            cv2.putText(frame, "ASTER Face Scan Active", (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 212, 255), 2)
             cv2.putText(frame, "Press Q to quit", (20, 65), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (123, 47, 255), 2)
-            cv2.imshow("Jarvis Face Authentication", frame)
+            cv2.imshow("ASTER Face Authentication", frame)
 
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
