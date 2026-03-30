@@ -1,4 +1,7 @@
+import os
 import pickle
+import json
+import re
 import time
 from pathlib import Path
 
@@ -23,6 +26,11 @@ DB_PATH = BASE_DIR / "jarvis.db"
 SAMPLES_DIR = Path(__file__).resolve().parent / "samples"
 KNOWN_IMAGE_DIRS = [SAMPLES_DIR, Path(__file__).resolve().parent / "known_faces"]
 CASCADE_PATH = Path(cv2.data.haarcascades) / "haarcascade_frontalface_default.xml"
+LEGACY_SAMPLES_DIR = SAMPLES_DIR
+LEGACY_TRAINER_DIR = Path(__file__).resolve().parent / "trainer"
+LEGACY_TRAINER_PATH = LEGACY_TRAINER_DIR / "trainer.yml"
+LEGACY_LABELS_PATH = LEGACY_TRAINER_DIR / "labels.json"
+LEGACY_FACE_AUTH_ENV = "ENABLE_LEGACY_FACE_PIPELINE"
 
 
 def _load_db_profiles():
@@ -39,6 +47,211 @@ def _load_db_profiles():
             continue
 
     return profiles
+
+
+def _legacy_face_recognizer_available() -> bool:
+    return bool(getattr(cv2, "face", None) and hasattr(cv2.face, "LBPHFaceRecognizer_create"))
+
+
+def _legacy_cascade_path() -> Path:
+    return Path(__file__).resolve().parent / "haarcascade_frontalface_default.xml"
+
+
+def _load_legacy_cascade():
+    cascade = cv2.CascadeClassifier(str(_legacy_cascade_path()))
+    if cascade.empty():
+        cascade = cv2.CascadeClassifier(str(CASCADE_PATH))
+    return cascade if not cascade.empty() else None
+
+
+def _legacy_label_map() -> dict[str, str]:
+    if not LEGACY_LABELS_PATH.exists():
+        return {}
+
+    try:
+        payload = json.loads(LEGACY_LABELS_PATH.read_text(encoding="utf-8"))
+        if isinstance(payload, dict):
+            return {str(key): str(value) for key, value in payload.items()}
+    except Exception:
+        pass
+
+    return {}
+
+
+def _save_legacy_label_map(label_map: dict[str, str]) -> None:
+    LEGACY_TRAINER_DIR.mkdir(parents=True, exist_ok=True)
+    LEGACY_LABELS_PATH.write_text(json.dumps(label_map, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def _ensure_legacy_label(profile_name: str) -> int:
+    label_map = _legacy_label_map()
+    for label, name in label_map.items():
+        if name == profile_name:
+            return int(label)
+
+    next_label = max((int(label) for label in label_map.keys() if str(label).isdigit()), default=0) + 1
+    label_map[str(next_label)] = profile_name
+    _save_legacy_label_map(label_map)
+    return next_label
+
+
+def _legacy_name_for_label(label_id: int) -> str:
+    return _legacy_label_map().get(str(label_id), str(label_id))
+
+
+def _legacy_samples_enabled() -> bool:
+    return str(os.getenv(LEGACY_FACE_AUTH_ENV, "0")).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _legacy_capture_samples(profile_name: str, sample_count: int = 25, timeout_seconds: int = 45) -> int:
+    if not _legacy_face_recognizer_available():
+        return 0
+
+    detector = _load_legacy_cascade()
+    if detector is None:
+        return 0
+
+    capture = cv2.VideoCapture(0, cv2.CAP_DSHOW) if hasattr(cv2, "CAP_DSHOW") else cv2.VideoCapture(0)
+    if not capture.isOpened():
+        return 0
+
+    LEGACY_SAMPLES_DIR.mkdir(parents=True, exist_ok=True)
+    label_id = _ensure_legacy_label(profile_name)
+    count = 0
+    start_time = time.time()
+
+    try:
+        while True:
+            success, frame = capture.read()
+            if not success:
+                continue
+
+            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            min_width = max(80, int(0.1 * capture.get(3)))
+            min_height = max(80, int(0.1 * capture.get(4)))
+            faces = detector.detectMultiScale(gray_frame, scaleFactor=1.3, minNeighbors=5, minSize=(min_width, min_height))
+
+            for (x, y, width, height) in faces:
+                count += 1
+                sample_path = LEGACY_SAMPLES_DIR / f"face.{label_id}.{count}.jpg"
+                cv2.imwrite(str(sample_path), gray_frame[y : y + height, x : x + width])
+                cv2.rectangle(frame, (x, y), (x + width, y + height), (0, 212, 255), 2)
+                cv2.putText(frame, f"Capturing {profile_name} ({count}/{sample_count})", (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 212, 255), 2)
+                if count >= sample_count:
+                    cv2.imshow("ASTER Face Enrollment", frame)
+                    cv2.waitKey(300)
+                    return count
+
+            cv2.putText(frame, f"Capturing {profile_name} ({count}/{sample_count})", (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 212, 255), 2)
+            cv2.putText(frame, "Press Q to cancel", (20, 65), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (123, 47, 255), 2)
+            cv2.imshow("ASTER Face Enrollment", frame)
+
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
+
+            if time.time() - start_time > timeout_seconds:
+                break
+    finally:
+        capture.release()
+        cv2.destroyAllWindows()
+
+    return count
+
+
+def _legacy_train_model() -> bool:
+    if not _legacy_face_recognizer_available():
+        return False
+
+    detector = _load_legacy_cascade()
+    if detector is None:
+        return False
+
+    image_paths = sorted(LEGACY_SAMPLES_DIR.glob("face.*.jpg"))
+    face_samples = []
+    ids = []
+
+    for image_path in image_paths:
+        parts = image_path.stem.split(".")
+        if len(parts) < 3 or not parts[1].isdigit():
+            continue
+
+        label_id = int(parts[1])
+        image = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+        if image is None:
+            continue
+
+        faces = detector.detectMultiScale(image, scaleFactor=1.3, minNeighbors=5)
+        if not len(faces):
+            face_samples.append(image)
+            ids.append(label_id)
+            continue
+
+        for (x, y, width, height) in faces:
+            face_samples.append(image[y : y + height, x : x + width])
+            ids.append(label_id)
+
+    if not face_samples:
+        return False
+
+    LEGACY_TRAINER_DIR.mkdir(parents=True, exist_ok=True)
+    recognizer = cv2.face.LBPHFaceRecognizer_create()
+    recognizer.train(face_samples, np.array(ids))
+    recognizer.write(str(LEGACY_TRAINER_PATH))
+    return True
+
+
+def _legacy_authenticate(timeout_seconds: int = 30):
+    if not _legacy_face_recognizer_available() or not LEGACY_TRAINER_PATH.exists():
+        return 0
+
+    detector = _load_legacy_cascade()
+    if detector is None:
+        return 0
+
+    recognizer = cv2.face.LBPHFaceRecognizer_create()
+    recognizer.read(str(LEGACY_TRAINER_PATH))
+
+    capture = cv2.VideoCapture(0, cv2.CAP_DSHOW) if hasattr(cv2, "CAP_DSHOW") else cv2.VideoCapture(0)
+    if not capture.isOpened():
+        return 0
+
+    start_time = time.time()
+
+    try:
+        while True:
+            success, frame = capture.read()
+            if not success:
+                continue
+
+            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            min_width = max(80, int(0.1 * capture.get(3)))
+            min_height = max(80, int(0.1 * capture.get(4)))
+            faces = detector.detectMultiScale(gray_frame, scaleFactor=1.2, minNeighbors=5, minSize=(min_width, min_height))
+
+            for (x, y, width, height) in faces:
+                label_id, accuracy = recognizer.predict(gray_frame[y : y + height, x : x + width])
+                name = _legacy_name_for_label(label_id)
+                _draw_label(frame, x, y, x + width, y + height, name)
+
+                if accuracy < 100 and name != "unknown":
+                    capture.release()
+                    cv2.destroyAllWindows()
+                    return name
+
+            cv2.putText(frame, "ASTER Face Scan Active", (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 212, 255), 2)
+            cv2.putText(frame, "Press Q to quit", (20, 65), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (123, 47, 255), 2)
+            cv2.imshow("ASTER Face Authentication", frame)
+
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
+
+            if time.time() - start_time > timeout_seconds:
+                break
+    finally:
+        capture.release()
+        cv2.destroyAllWindows()
+
+    return 0
 
 
 def _load_haar_cascade():
@@ -235,6 +448,12 @@ def EnrollFace(name):
 
     try:
         db.save_face_profile(profile_name, pickle.dumps(encodings))
+
+        if face_recognition is None or _legacy_samples_enabled():
+            legacy_samples = _legacy_capture_samples(profile_name)
+            if legacy_samples:
+                _legacy_train_model()
+
         return 1
     except Exception as exc:
         print(f"Failed to save face profile: {exc}")
@@ -252,6 +471,10 @@ def AuthenticateFace():
         known_profiles = _load_image_profiles()
 
     if not known_profiles:
+        legacy_result = _legacy_authenticate()
+        if legacy_result not in (0, None, "", False):
+            return legacy_result
+
         print("No enrolled face profile was found.")
         try:
             eel.showEnrollment()

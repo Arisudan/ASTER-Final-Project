@@ -1,0 +1,19 @@
+﻿<svg class="aster-prism" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M50 10 L15 85 L35 85 L50 45 L65 85 L85 85 Z" fill="url(#silver-grad)"/>
+  <path d="M50 40 L35 75 L65 75 Z" fill="url(#gold-grad)"/>
+  <path d="M35 75 L30 85 L15 85 Z" fill="#606060"/>
+  <path d="M65 75 L70 85 L85 85 Z" fill="#808080"/>
+  <path d="M50 10 L25 65 L35 75 L50 40 Z" fill="#A0A0A0"/>
+  <path d="M50 10 L75 65 L65 75 L50 40 Z" fill="#D0D0D0"/>
+  <defs>
+    <linearGradient id="silver-grad" x1="0" y1="0" x2="100" y2="100">
+      <stop offset="0%" stop-color="#E2E2E2"/>
+      <stop offset="50%" stop-color="#C0C0C0"/>
+      <stop offset="100%" stop-color="#808080"/>
+    </linearGradient>
+    <linearGradient id="gold-grad" x1="50" y1="40" x2="50" y2="75">
+      <stop offset="0%" stop-color="#FCEBA0"/>
+      <stop offset="100%" stop-color="#D4AF37"/>
+    </linearGradient>
+  </defs>
+</svg>

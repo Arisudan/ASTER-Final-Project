@@ -1,5 +1,5 @@
 eel
-opencv-python
+opencv-contrib-python
 numpy
 face_recognition
 pyttsx3

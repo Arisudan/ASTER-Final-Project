@@ -21,33 +21,94 @@
   <main class="app-shell">
     <div id="liveRegion" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
     <section id="loader" class="screen screen--active screen--ambient">
-      <div class="glass-card loader-card" data-aos="fade-up">
-        <div class="brand-badge brand-badge--ambient">A</div>
-        <p class="eyebrow">ASTER</p>
-        <h1>Booting Infotainment Core</h1>
-        <p class="lead">Starting voice, face authentication, Spotify, and vehicle services.</p>
-        <div class="loader-visual">
-          <div class="loader-ring"></div>
-          <div class="loader-pulse"></div>
+      <div class="glass-card loader-card startup-shell" data-aos="fade-up">
+        <div class="startup-header">
+          <div class="startup-brand">
+            
+<svg class="brand-badge brand-badge--ambient aster-prism" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M50 5 L10 85 L90 85 Z" fill="url(#silver-outer)" />
+  <path d="M50 5 L10 85 L30 85 L50 45 Z" fill="#E5E5E5" />
+  <path d="M50 5 L30 85 L50 55 Z" fill="#B0B0B0" />
+  <path d="M50 5 L90 85 L70 85 L50 45 Z" fill="#D0D0D0" />
+  <path d="M50 5 L70 85 L50 55 Z" fill="#909090" />
+  <!-- Central Gold Prism -->
+  <path d="M50 25 L30 65 L70 65 Z" fill="url(#gold-core)" />
+  <!-- Gold Facets -->
+  <path d="M50 25 L30 65 L50 60 Z" fill="#FFE87C" />
+  <path d="M50 25 L70 65 L50 60 Z" fill="#D4AF37" />
+  <path d="M30 65 L70 65 L50 60 Z" fill="#B58B12" />
+
+  <defs>
+    <linearGradient id="silver-outer" x1="0" y1="0" x2="100" y2="100">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="50%" stop-color="#C0C0C0"/>
+      <stop offset="100%" stop-color="#505050"/>
+    </linearGradient>
+    <linearGradient id="gold-core" x1="50" y1="25" x2="50" y2="65">
+      <stop offset="0%" stop-color="#FFF0A0"/>
+      <stop offset="100%" stop-color="#D4AF37"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+            <div>
+              <p class="eyebrow">Automotive Control System</p>
+              <h1>ASTER</h1>
+            </div>
+          </div>
+          <div class="startup-chip">Secure Boot</div>
         </div>
+
+        <div class="startup-grid">
+          <section class="startup-panel startup-panel--primary">
+            <p class="eyebrow">Infotainment Core</p>
+            <h2>Guarded Startup Sequence</h2>
+            <p class="lead">Initializing cockpit voice, driver authentication, navigation, and playback control.</p>
+
+            <div class="startup-metrics">
+              <div class="startup-metric"><span>Face Auth</span><strong>Ready</strong></div>
+              <div class="startup-metric"><span>Voice Stack</span><strong>Armed</strong></div>
+              <div class="startup-metric"><span>Drive UI</span><strong>Stable</strong></div>
+              <div class="startup-metric"><span>Spotify</span><strong>Linking</strong></div>
+            </div>
+
+            <div class="startup-checklist">
+              <div><span class="startup-dot"></span><strong>Camera handshake</strong><small>Calibrating driver access</small></div>
+              <div><span class="startup-dot"></span><strong>Voice engine</strong><small>Loading command profile</small></div>
+              <div><span class="startup-dot"></span><strong>Vehicle display</strong><small>Preparing cockpit surfaces</small></div>
+            </div>
+          </section>
+
+          <aside class="startup-panel startup-panel--secondary">
+            <div class="startup-radar">
+              <div class="startup-radar__ring startup-radar__ring--outer"></div>
+              <div class="startup-radar__ring startup-radar__ring--mid"></div>
+              <div class="startup-radar__ring startup-radar__ring--inner"></div>
+              <div class="startup-radar__core"></div>
+              <div class="startup-radar__scan"></div>
+            </div>
+
+            <div class="startup-status-rail">
+              <div class="startup-status"><span>IGN</span><strong>ON</strong></div>
+              <div class="startup-status"><span>HMI</span><strong>Locked</strong></div>
+              <div class="startup-status"><span>SYS</span><strong>Live</strong></div>
+            </div>
+          </aside>
+        </div>
+
         <div class="loader-track"><span></span></div>
       </div>
     </section>
 
     <section id="face-auth" class="screen screen--hidden screen--ambient">
-      <div class="auth-shell glass-card" data-aos="zoom-in">
-        <div class="auth-hero">
-          <div class="scan-orb">
-            <div class="scan-ring"></div>
-            <div class="scan-ring scan-ring--alt"></div>
-            <div class="scan-core"></div>
-          </div>
-          <div>
-            <p class="eyebrow">Dark Access</p>
-            <h2>Face Authentication Required</h2>
-            <p id="auth-status" class="status-copy">Align your face with the camera to continue.</p>
-          </div>
+      <div class="auth-panel glass-card" data-aos="zoom-in">
+        <img class="auth-art" src="assets/face-scan.svg" alt="Face scan" />
+        <div class="scan-orb">
+          <span class="scan-line"></span>
+          <span class="scan-line scan-line--alt"></span>
         </div>
+        <h2>Face Authentication Required</h2>
+        <p id="auth-status">Align your face with the camera to continue.</p>
         <div class="auth-actions">
           <button id="authEnrollButton" type="button" class="btn btn--soft">Register Face</button>
           <button id="authSettingsButton" type="button" class="btn btn--ghost">Settings</button>
@@ -56,20 +117,14 @@
     </section>
 
     <section id="face-enrollment" class="screen screen--hidden screen--ambient">
-      <div class="auth-shell glass-card enrollment-shell" data-aos="zoom-in">
-        <div class="auth-hero">
-          <div class="scan-orb scan-orb--small">
-            <div class="scan-ring"></div>
-            <div class="scan-ring scan-ring--alt"></div>
-            <div class="scan-core"></div>
-          </div>
-          <div>
-            <p class="eyebrow">Face Registration</p>
-            <h2>Enrol New User</h2>
-            <p id="enrollment-status" class="status-copy">Enter a profile name and capture a face sample.</p>
-          </div>
+      <div class="auth-panel enrollment-panel glass-card" data-aos="zoom-in">
+        <div class="scan-orb scan-orb--enroll">
+          <span class="scan-line"></span>
+          <span class="scan-line scan-line--alt"></span>
         </div>
-        <div class="form-row">
+        <h2>Face Enrollment</h2>
+        <p id="enrollment-status">Enter a name, then capture a face profile.</p>
+        <div class="enrollment-form">
           <input id="enrollmentName" type="text" placeholder="Profile name" autocomplete="off" />
           <div class="auth-actions">
             <button id="enrollmentSubmit" type="button" class="btn btn--primary">Save Face</button>
@@ -80,11 +135,10 @@
     </section>
 
     <section id="face-auth-success" class="screen screen--hidden screen--ambient">
-      <div class="success-card glass-card" data-aos="fade-up">
-        <div class="success-mark">✓</div>
-        <p class="eyebrow">Access Granted</p>
+      <div class="success-panel glass-card" data-aos="fade-up">
+        <div class="success-mark">✔</div>
         <h2>Authentication Successful</h2>
-        <p class="lead">Welcome to ASTER.</p>
+        <p>Access granted. Welcome to ASTER.</p>
       </div>
     </section>
 
@@ -92,7 +146,33 @@
       <div class="dashboard-shell">
         <header class="topbar glass-panel">
           <div class="topbar-brand">
-            <div class="brand-badge">J</div>
+            
+<svg class="brand-badge aster-prism" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M50 5 L10 85 L90 85 Z" fill="url(#silver-outer)" />
+  <path d="M50 5 L10 85 L30 85 L50 45 Z" fill="#E5E5E5" />
+  <path d="M50 5 L30 85 L50 55 Z" fill="#B0B0B0" />
+  <path d="M50 5 L90 85 L70 85 L50 45 Z" fill="#D0D0D0" />
+  <path d="M50 5 L70 85 L50 55 Z" fill="#909090" />
+  <!-- Central Gold Prism -->
+  <path d="M50 25 L30 65 L70 65 Z" fill="url(#gold-core)" />
+  <!-- Gold Facets -->
+  <path d="M50 25 L30 65 L50 60 Z" fill="#FFE87C" />
+  <path d="M50 25 L70 65 L50 60 Z" fill="#D4AF37" />
+  <path d="M30 65 L70 65 L50 60 Z" fill="#B58B12" />
+
+  <defs>
+    <linearGradient id="silver-outer" x1="0" y1="0" x2="100" y2="100">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="50%" stop-color="#C0C0C0"/>
+      <stop offset="100%" stop-color="#505050"/>
+    </linearGradient>
+    <linearGradient id="gold-core" x1="50" y1="25" x2="50" y2="65">
+      <stop offset="0%" stop-color="#FFF0A0"/>
+      <stop offset="100%" stop-color="#D4AF37"/>
+    </linearGradient>
+  </defs>
+</svg>
+
             <div>
               <p class="eyebrow">Automotive AI Infotainment</p>
               <h1>ASTER</h1>
@@ -101,6 +181,7 @@
           <div class="topbar-meta">
             <div class="meta-pill"><span>Time</span><strong id="live-clock">--:-- --</strong></div>
             <div class="meta-pill"><span>Date</span><strong id="live-date">---</strong></div>
+            <div class="meta-pill"><span>Weather</span><strong id="weatherValue">--</strong></div>
             <div class="meta-pill meta-pill--spotify"><span>Spotify</span><strong id="spotifyConnectionState">Disconnected</strong></div>
             <button id="modeToggleButton" type="button" class="mode-toggle-button" aria-label="Toggle dark mode intensity">Dark Mode</button>
           </div>
@@ -117,6 +198,11 @@
                 <span class="panel-tag">Dark</span>
               </div>
               <div class="seat-visual">
+                <div class="seat-window"></div>
+                <div class="seat-dash"></div>
+                <div class="seat-seat"></div>
+                <div class="seat-wheel"></div>
+                <div class="seat-ambient"></div>
                 <div class="seat-line seat-line--one"></div>
                 <div class="seat-line seat-line--two"></div>
                 <div class="seat-line seat-line--three"></div>
@@ -175,24 +261,29 @@
                 </div>
               </div>
 
-              <div class="car-visual">
-                <div class="car-top"></div>
-                <div class="car-body"></div>
-                <div class="car-cabin"></div>
-                <div class="car-light car-light--left"></div>
-                <div class="car-light car-light--right"></div>
-                <div class="indicator indicator--left"></div>
-                <div class="indicator indicator--right"></div>
-              </div>
+              <div class="drive-layout">
+                <div class="drive-hero">
+                  <div class="car-visual">
+                    <div class="car-top"></div>
+                    <div class="car-body"></div>
+                    <div class="car-cabin"></div>
+                    <div class="car-light car-light--left"></div>
+                    <div class="car-light car-light--right"></div>
+                    <div class="indicator indicator--left"></div>
+                    <div class="indicator indicator--right"></div>
+                  </div>
 
-              <div class="drive-metrics">
-                <div class="speed-block">
-                  <span class="eyebrow">Speed</span>
-                  <div class="speed-readout"><strong id="speedValue">0</strong><span>mph</span></div>
+                  <div class="drive-summary">
+                    <div class="speed-block">
+                      <span class="eyebrow">Speed</span>
+                      <div class="speed-readout"><strong id="speedValue">0</strong><span>mph</span></div>
+                    </div>
+                    <div class="gauge-wrap">
+                      <canvas id="speedGauge" width="260" height="260"></canvas>
+                    </div>
+                  </div>
                 </div>
-                <div class="gauge-wrap">
-                  <canvas id="speedGauge" width="260" height="260"></canvas>
-                </div>
+
                 <div class="drive-stack">
                   <div class="metric-card"><span>Battery</span><strong id="batteryValue">91%</strong></div>
                   <div class="metric-card"><span>Autopilot</span><strong id="autopilotValue">Standby</strong></div>

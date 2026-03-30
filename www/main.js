@@ -76,6 +76,15 @@ function toggleMode(mode) {
     dashboard.classList.toggle("dashboard--ambient", uiState.mode === "ambient");
   }
 
+  try {
+    eel.setVehicleState({
+      mode: uiState.mode,
+      drive_mode: uiState.mode === "driving" ? "Dark" : "Dark+",
+    })();
+  } catch (error) {
+    // Backend sync is best-effort.
+  }
+
   updateGearHighlight();
 }
 
@@ -228,15 +237,15 @@ async function refreshWeather() {
     const payload = await response.json();
     const current = payload.current_condition?.[0];
     if (current) {
-      const weather = byId("autopilotValue");
+      const weather = byId("weatherValue");
       if (weather) {
         weather.textContent = `${current.temp_C}°C ${current.weatherDesc?.[0]?.value || "Clear"}`;
       }
     }
   } catch (error) {
-    const weather = byId("autopilotValue");
+    const weather = byId("weatherValue");
     if (weather) {
-      weather.textContent = "Standby";
+      weather.textContent = "--";
     }
   }
 }
@@ -288,6 +297,60 @@ function updateSpeedGauge(speed) {
   speedGauge.update("none");
 }
 
+function applyVehicleState(state) {
+  const payload = state || {};
+
+  if (payload.mode === "driving" || payload.mode === "ambient") {
+    uiState.mode = payload.mode;
+    document.body.dataset.mode = uiState.mode;
+  }
+
+  if (typeof payload.speed === "number" || typeof payload.speed === "string") {
+    uiState.speed = Math.max(0, Math.round(Number(payload.speed) || 0));
+  }
+  if (typeof payload.battery === "number" || typeof payload.battery === "string") {
+    uiState.battery = Math.max(0, Math.min(100, Number(payload.battery) || 0));
+  }
+  if (typeof payload.gear === "string" && payload.gear) {
+    uiState.gear = payload.gear;
+  }
+  if (typeof payload.lights_on === "boolean") {
+    uiState.lightsOn = payload.lights_on;
+  }
+  if (typeof payload.climate_on === "boolean") {
+    uiState.climateOn = payload.climate_on;
+  }
+
+  const speedLabel = byId("speedValue");
+  const battery = byId("batteryValue");
+  const autopilot = byId("autopilotValue");
+  const modeValue = byId("modeValue");
+  const lightsState = byId("seatLightsState");
+  const climateState = byId("climateState");
+
+  if (speedLabel) {
+    speedLabel.textContent = String(uiState.speed);
+  }
+  if (battery) {
+    battery.textContent = `${Math.round(uiState.battery)}%`;
+  }
+  if (autopilot) {
+    autopilot.textContent = payload.autopilot || (uiState.mode === "driving" ? "Engaged" : "Standby");
+  }
+  if (modeValue) {
+    modeValue.textContent = payload.drive_mode || (uiState.mode === "driving" ? "Dark" : "Dark+");
+  }
+  if (lightsState) {
+    lightsState.textContent = uiState.lightsOn ? "On" : "Off";
+  }
+  if (climateState) {
+    climateState.textContent = uiState.climateOn ? "Auto" : "72°F";
+  }
+
+  updateGearHighlight();
+  updateSpeedGauge(uiState.speed);
+}
+
 function updateGearHighlight() {
   const gearStrip = byId("gearStrip");
   if (!gearStrip) {
@@ -304,34 +367,29 @@ function setGear(gear) {
 }
 
 function updateVehicleTelemetry() {
-  const speedLabel = byId("speedValue");
-  const battery = byId("batteryValue");
-  const lightsState = byId("seatLightsState");
-  const climateState = byId("climateState");
+  return eel.advanceVehicleState(uiState.mode)()
+    .then((state) => applyVehicleState(state || {}))
+    .catch(() => {
+      if (uiState.mode === "driving") {
+        uiState.speed = Math.min(116, Math.max(18, uiState.speed + Math.round(Math.random() * 10 - 2)));
+        uiState.battery = Math.max(30, uiState.battery - 0.1);
+        setGear("D");
+      } else {
+        uiState.speed = Math.max(0, uiState.speed - 12);
+        setGear("P");
+      }
 
-  if (uiState.mode === "driving") {
-    uiState.speed = Math.min(116, Math.max(18, uiState.speed + Math.round(Math.random() * 10 - 2)));
-    uiState.battery = Math.max(30, uiState.battery - 0.1);
-    setGear("D");
-  } else {
-    uiState.speed = Math.max(0, uiState.speed - 12);
-    setGear("P");
-  }
-
-  if (speedLabel) {
-    speedLabel.textContent = String(uiState.speed);
-  }
-  if (battery) {
-    battery.textContent = `${Math.round(uiState.battery)}%`;
-  }
-  if (lightsState) {
-    lightsState.textContent = uiState.lightsOn ? "On" : "Off";
-  }
-  if (climateState) {
-    climateState.textContent = uiState.climateOn ? "Auto" : "72°F";
-  }
-
-  updateSpeedGauge(uiState.speed);
+      applyVehicleState({
+        mode: uiState.mode,
+        speed: uiState.speed,
+        battery: uiState.battery,
+        gear: uiState.gear,
+        lights_on: uiState.lightsOn,
+        climate_on: uiState.climateOn,
+        autopilot: uiState.mode === "driving" ? "Engaged" : "Standby",
+        drive_mode: uiState.mode === "driving" ? "Dark" : "Dark+",
+      });
+    });
 }
 
 function setSpotifyConnectionState(text) {
@@ -673,17 +731,11 @@ function registerSeatControls() {
       const action = button.getAttribute("data-seat-action");
       if (action === "lights") {
         uiState.lightsOn = !uiState.lightsOn;
-        const lightsState = byId("seatLightsState");
-        if (lightsState) {
-          lightsState.textContent = uiState.lightsOn ? "On" : "Off";
-        }
+        applyVehicleState(await eel.setVehicleState({ lights_on: uiState.lightsOn })());
         showAlert(`Interior lights ${uiState.lightsOn ? "enabled" : "disabled"}.`);
       } else if (action === "climate") {
         uiState.climateOn = !uiState.climateOn;
-        const climateState = byId("climateState");
-        if (climateState) {
-          climateState.textContent = uiState.climateOn ? "Auto" : "72°F";
-        }
+        applyVehicleState(await eel.setVehicleState({ climate_on: uiState.climateOn })());
         showAlert(`Climate ${uiState.climateOn ? "set to auto" : "set to comfort"}.`);
       } else if (action === "settings") {
         showSettings();
@@ -871,7 +923,20 @@ async function refreshSpotifyState() {
 
 function refreshAllState() {
   refreshSpotifyState();
-  updateVehicleTelemetry();
+  return eel.getVehicleState()()
+    .then((state) => applyVehicleState(state || {}))
+    .catch(() => {
+      applyVehicleState({
+        mode: uiState.mode,
+        speed: uiState.speed,
+        battery: uiState.battery,
+        gear: uiState.gear,
+        lights_on: uiState.lightsOn,
+        climate_on: uiState.climateOn,
+        autopilot: uiState.mode === "driving" ? "Engaged" : "Standby",
+        drive_mode: uiState.mode === "driving" ? "Dark" : "Dark+",
+      });
+    });
 }
 
 function initializeSpotifyPlayer() {

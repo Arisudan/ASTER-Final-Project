@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 import os
 import queue
 import subprocess
@@ -35,6 +36,17 @@ _voice_queue: "queue.Queue[dict]" = queue.Queue()
 _authenticated = threading.Event()
 _current_user: str | None = None
 _auth_started = threading.Event()
+_vehicle_lock = threading.Lock()
+_vehicle_state = {
+    "mode": "ambient",
+    "speed": 0,
+    "battery": 91.0,
+    "gear": "P",
+    "lights_on": False,
+    "climate_on": False,
+    "autopilot": "Standby",
+    "drive_mode": "Dark+",
+}
 
 
 def _parse_bool(value: object, default: bool = False) -> bool:
@@ -67,6 +79,63 @@ def _call_js(function_name: str, *args):
         return getattr(eel, function_name)(*args)
     except Exception:
         return None
+
+
+def _vehicle_snapshot() -> dict[str, object]:
+    with _vehicle_lock:
+        snapshot = dict(_vehicle_state)
+        snapshot["battery"] = round(float(snapshot.get("battery", 0.0)), 1)
+        snapshot["speed"] = int(snapshot.get("speed", 0))
+        snapshot["lights_on"] = bool(snapshot.get("lights_on", False))
+        snapshot["climate_on"] = bool(snapshot.get("climate_on", False))
+        return snapshot
+
+
+def _advance_vehicle_state(mode: str | None = None) -> dict[str, object]:
+    with _vehicle_lock:
+        active_mode = "driving" if mode == "driving" else "ambient"
+        _vehicle_state["mode"] = active_mode
+        if active_mode == "driving":
+            _vehicle_state["speed"] = min(116, max(18, int(_vehicle_state["speed"]) + random.randint(-2, 8)))
+            _vehicle_state["battery"] = max(30.0, float(_vehicle_state["battery"]) - 0.1)
+            _vehicle_state["gear"] = "D"
+            _vehicle_state["autopilot"] = "Engaged"
+            _vehicle_state["drive_mode"] = "Dark"
+        else:
+            _vehicle_state["speed"] = max(0, int(_vehicle_state["speed"]) - 12)
+            _vehicle_state["gear"] = "P"
+            _vehicle_state["autopilot"] = "Standby"
+            _vehicle_state["drive_mode"] = "Dark+"
+        return _vehicle_snapshot()
+
+
+def _merge_vehicle_state(payload: dict[str, object]) -> dict[str, object]:
+    with _vehicle_lock:
+        if "mode" in payload:
+            _vehicle_state["mode"] = "driving" if str(payload["mode"]) == "driving" else "ambient"
+        if "speed" in payload:
+            try:
+                _vehicle_state["speed"] = max(0, min(120, int(float(payload["speed"]))))
+            except Exception:
+                pass
+        if "battery" in payload:
+            try:
+                _vehicle_state["battery"] = max(0.0, min(100.0, float(payload["battery"])))
+            except Exception:
+                pass
+        if "gear" in payload:
+            gear = str(payload["gear"]).upper().strip()[:1]
+            if gear in {"P", "R", "N", "D"}:
+                _vehicle_state["gear"] = gear
+        if "lights_on" in payload:
+            _vehicle_state["lights_on"] = bool(payload["lights_on"])
+        if "climate_on" in payload:
+            _vehicle_state["climate_on"] = bool(payload["climate_on"])
+        if "autopilot" in payload:
+            _vehicle_state["autopilot"] = str(payload["autopilot"] or "Standby")
+        if "drive_mode" in payload:
+            _vehicle_state["drive_mode"] = str(payload["drive_mode"] or "Dark+")
+        return _vehicle_snapshot()
 
 
 def _voice_worker() -> None:
@@ -204,6 +273,23 @@ def saveCurrentUserPreset(settings):
         db.save_settings(settings)
         db.save_settings_for_user(_current_user, settings)
     return getSettings()
+
+
+@eel.expose
+def getVehicleState():
+    return _vehicle_snapshot()
+
+
+@eel.expose
+def advanceVehicleState(mode=None):
+    return _advance_vehicle_state(str(mode or "ambient"))
+
+
+@eel.expose
+def setVehicleState(state):
+    if isinstance(state, dict):
+        return _merge_vehicle_state(state)
+    return _vehicle_snapshot()
 
 
 @eel.expose
