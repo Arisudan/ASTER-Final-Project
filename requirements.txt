@@ -1,12 +1,14 @@
 eel
 opencv-python
+numpy
 face_recognition
 pyttsx3
 SpeechRecognition
 pyaudio
-playsound
+playsound==1.2.2
 openai
 requests
 pvporcupine
 pygame
 deepface
+ultralytics

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import random
 import subprocess
@@ -9,10 +11,11 @@ import cv2  # pyright: ignore[reportMissingImports]
 import eel
 import requests
 
-from Engine.Features import openai_query, log_conversation, speak, takecommand as feature_takecommand
+from Engine import db
+from Engine.Features import open_android_app, send_sms, speak, takecommand as feature_takecommand
+from Engine.ai_memory import generate_response
 
 
-@eel.expose
 def takecommand():
     return feature_takecommand()
 
@@ -66,24 +69,39 @@ def _open_camera():
     return "Camera closed."
 
 
+def _navigation_simulation():
+    webbrowser.open("https://www.google.com/maps")
+    return "Starting navigation simulation on Google Maps."
+
+
 @eel.expose
-def allCommands(query):
+def allCommands(query, source="voice"):
     query_text = str(query or "").lower().strip()
     if not query_text or query_text == "none":
         return "none"
 
     response = ""
-
     try:
         if "open youtube" in query_text or query_text == "youtube":
             webbrowser.open("https://www.youtube.com")
             response = "Opening YouTube."
 
-        elif "what time is it" in query_text or query_text == "time" or "time" in query_text:
+        elif "open google" in query_text or query_text == "google":
+            webbrowser.open("https://www.google.com")
+            response = "Opening Google."
+
+        elif "open maps" in query_text or "maps" in query_text:
+            webbrowser.open("https://www.google.com/maps")
+            response = "Opening Maps."
+
+        elif "what time is it" in query_text or query_text == "time" or query_text.startswith("time"):
             response = f"The time is {datetime.now().strftime('%I:%M %p')}"
 
-        elif "play music" in query_text or "music" in query_text:
+        elif "play music" in query_text or query_text == "music":
             response = _play_first_music_track()
+
+        elif "navigation" in query_text:
+            response = _navigation_simulation()
 
         elif "weather" in query_text:
             response = "Weather service unavailable."
@@ -106,32 +124,44 @@ def allCommands(query):
             ]
             response = random.choice(jokes)
 
-        elif "open camera" in query_text or "camera" in query_text:
+        elif "open camera" in query_text or query_text == "camera":
             response = _open_camera()
 
         elif "send message" in query_text or "sms" in query_text:
-            response = "Message sending is a placeholder for ADB integration."
+            response = send_sms("", "")
 
-        elif "open maps" in query_text or "maps" in query_text:
-            webbrowser.open("https://www.google.com/maps")
-            response = "Opening Maps."
+        elif "open android app" in query_text or query_text.startswith("open app "):
+            package = query_text.replace("open android app", "").replace("open app", "").strip()
+            response = open_android_app(package)
+
+        elif "shutdown system" in query_text:
+            response = "Shutting down the system."
+            speak(response)
+            db.log_conversation(query_text, response, source=source)
+            os.system("shutdown /s /t 0")
+            return response
 
         elif "call" in query_text:
             response = "Calling via ADB is not yet configured."
 
-        elif "open settings" in query_text or "settings" in query_text:
-            response = "Settings panel is not implemented yet."
+        elif "volume up" in query_text:
+            response = "Volume up is not yet configured."
+
+        elif "volume down" in query_text:
+            response = "Volume down is not yet configured."
+
+        elif "mute" in query_text:
+            response = "Mute is not yet configured."
 
         else:
-            response = openai_query(query_text)
-            if not response:
-                response = "I am ready."
+            response = generate_response(query_text)
 
-        speak(response)
-        log_conversation(query_text, response)
+        if response:
+            speak(response)
+        db.log_conversation(query_text, response, source=source)
         return response
     except Exception as exc:
         error_message = f"I could not complete that command. {exc}"
         speak(error_message)
-        log_conversation(query_text, error_message)
+        db.log_conversation(query_text, error_message, source=source)
         return error_message

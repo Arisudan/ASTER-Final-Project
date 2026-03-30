@@ -4,14 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Jarvis Infotainment System</title>
+  <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css" />
   <link rel="stylesheet" href="style.css" />
   <script type="text/javascript" src="/eel.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
   <script defer src="main.js"></script>
 </head>
 <body>
   <main class="app-shell">
     <section id="loader" class="screen screen--active">
       <div class="loader-card">
+        <img class="brand-art" src="assets/jarvis-logo.svg" alt="Jarvis logo" />
         <div class="loader-ring"></div>
         <h1>Initializing Jarvis...</h1>
         <p>Booting assistant services, web layer, and security gate.</p>
@@ -21,12 +28,35 @@
 
     <section id="face-auth" class="screen screen--hidden">
       <div class="auth-panel">
+        <img class="auth-art" src="assets/face-scan.svg" alt="Face scan" />
         <div class="scan-orb">
           <span class="scan-line"></span>
           <span class="scan-line scan-line--alt"></span>
         </div>
         <h2>Face Authentication Required</h2>
         <p id="auth-status">Align your face with the camera to continue.</p>
+        <div class="auth-actions">
+          <button id="enrollButton" type="button">Enroll Face</button>
+          <button id="faceEnrollButton" type="button">Capture Face</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="face-enrollment" class="screen screen--hidden">
+      <div class="auth-panel enrollment-panel">
+        <div class="scan-orb scan-orb--enroll">
+          <span class="scan-line"></span>
+          <span class="scan-line scan-line--alt"></span>
+        </div>
+        <h2>Face Enrollment</h2>
+        <p id="enrollment-status">Enter a name, then capture a face profile.</p>
+        <div class="enrollment-form">
+          <input id="enrollmentName" type="text" placeholder="Profile name" autocomplete="off" />
+          <div class="auth-actions">
+            <button id="enrollmentSubmit" type="button">Save Face</button>
+            <button id="enrollmentCancel" type="button">Back</button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -66,6 +96,21 @@
         </header>
 
         <section class="hero-grid">
+          <aside class="side-panel side-panel--left" data-aos="fade-right">
+            <div class="panel-card">
+              <h3>Navigation</h3>
+              <button type="button" data-action="open maps">Maps</button>
+              <button type="button" data-action="open youtube">Media</button>
+              <button type="button" data-action="open google">Browser</button>
+            </div>
+            <div class="panel-card">
+              <h3>Quick Access</h3>
+              <button type="button" data-action="play music">Music</button>
+              <button type="button" data-action="open camera">Camera</button>
+              <button type="button" data-action="call">Calls</button>
+            </div>
+          </aside>
+
           <div class="orb-stage">
             <div class="orb-glow"></div>
             <div class="orb">
@@ -80,7 +125,17 @@
             </div>
           </div>
 
-          <aside class="command-column">
+          <aside class="command-column side-panel side-panel--right" data-aos="fade-left">
+            <div class="panel-card stats-panel">
+              <h3>System Stats</h3>
+              <canvas id="statsChart" width="320" height="180"></canvas>
+              <div class="metric-grid">
+                <div><span>CPU</span><strong id="cpuMetric">18%</strong></div>
+                <div><span>Memory</span><strong id="memoryMetric">42%</strong></div>
+                <div><span>Network</span><strong id="networkMetric">Normal</strong></div>
+              </div>
+            </div>
+
             <div class="command-card">
               <h2>Voice Command</h2>
               <div class="voice-input-row">
@@ -97,14 +152,6 @@
                 <p>Assistant reply</p>
                 <strong id="last-response">Waiting for input</strong>
               </div>
-            </div>
-
-            <div class="quick-actions">
-              <button data-action="play music" type="button">Music</button>
-              <button data-action="open maps" type="button">Maps</button>
-              <button data-action="call" type="button">Call</button>
-              <button data-action="open camera" type="button">Camera</button>
-              <button data-action="settings" type="button">Settings</button>
             </div>
           </aside>
         </section>
