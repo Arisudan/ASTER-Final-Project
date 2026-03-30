@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jarvis Infotainment System</title>
+  <link rel="stylesheet" href="style.css" />
+  <script type="text/javascript" src="/eel.js"></script>
+  <script defer src="main.js"></script>
+</head>
+<body>
+  <main class="app-shell">
+    <section id="loader" class="screen screen--active">
+      <div class="loader-card">
+        <div class="loader-ring"></div>
+        <h1>Initializing Jarvis...</h1>
+        <p>Booting assistant services, web layer, and security gate.</p>
+        <div class="loader-track"><span></span></div>
+      </div>
+    </section>
+
+    <section id="face-auth" class="screen screen--hidden">
+      <div class="auth-panel">
+        <div class="scan-orb">
+          <span class="scan-line"></span>
+          <span class="scan-line scan-line--alt"></span>
+        </div>
+        <h2>Face Authentication Required</h2>
+        <p id="auth-status">Align your face with the camera to continue.</p>
+      </div>
+    </section>
+
+    <section id="face-auth-success" class="screen screen--hidden">
+      <div class="success-panel">
+        <div class="success-mark">✓</div>
+        <h2>Authentication Successful</h2>
+        <p>Access granted. Welcome to Jarvis.</p>
+      </div>
+    </section>
+
+    <section id="start" class="screen screen--hidden">
+      <div id="main-dashboard" class="dashboard">
+        <header class="topbar">
+          <div class="brand-block">
+            <div class="brand-mark"></div>
+            <div>
+              <span class="brand-kicker">AI Enhanced Infotainment System</span>
+              <h1>Jarvis</h1>
+            </div>
+          </div>
+
+          <div class="topbar-widgets">
+            <div class="widget">
+              <span class="widget-label">Time</span>
+              <strong id="live-clock">--:-- --</strong>
+            </div>
+            <div class="widget">
+              <span class="widget-label">Date</span>
+              <strong id="live-date">---</strong>
+            </div>
+            <div class="widget weather-widget">
+              <span class="widget-label">Weather</span>
+              <strong id="weather-value">Standby</strong>
+            </div>
+          </div>
+        </header>
+
+        <section class="hero-grid">
+          <div class="orb-stage">
+            <div class="orb-glow"></div>
+            <div class="orb">
+              <div class="orb-core"></div>
+              <div class="orb-rings"></div>
+              <div class="orb-wave orb-wave--one"></div>
+              <div class="orb-wave orb-wave--two"></div>
+            </div>
+            <div class="orb-caption">
+              <span id="command-status">Awaiting voice command</span>
+              <small id="response-status">System ready.</small>
+            </div>
+          </div>
+
+          <aside class="command-column">
+            <div class="command-card">
+              <h2>Voice Command</h2>
+              <div class="voice-input-row">
+                <input id="voiceCommand" type="text" placeholder="Speak or type a command" autocomplete="off" />
+                <button id="micButton" class="mic-button" type="button" aria-label="Capture voice command">
+                  <span></span>
+                </button>
+              </div>
+              <div class="status-box">
+                <p>Last command</p>
+                <strong id="last-command">None</strong>
+              </div>
+              <div class="status-box">
+                <p>Assistant reply</p>
+                <strong id="last-response">Waiting for input</strong>
+              </div>
+            </div>
+
+            <div class="quick-actions">
+              <button data-action="play music" type="button">Music</button>
+              <button data-action="open maps" type="button">Maps</button>
+              <button data-action="call" type="button">Call</button>
+              <button data-action="open camera" type="button">Camera</button>
+              <button data-action="settings" type="button">Settings</button>
+            </div>
+          </aside>
+        </section>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

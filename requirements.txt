@@ -1,0 +1,12 @@
+eel
+opencv-python
+face_recognition
+pyttsx3
+SpeechRecognition
+pyaudio
+playsound
+openai
+requests
+pvporcupine
+pygame
+deepface

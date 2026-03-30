@@ -1,0 +1,6 @@
+/envjarvis
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.db-journal
