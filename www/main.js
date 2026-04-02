@@ -1223,7 +1223,7 @@ async function startupSequence() {
 
   await new Promise((resolve) => window.setTimeout(resolve, 2400));
   showScreen(SCREENS.auth);
-  setAuthStatus("Starting camera scan...");
+  setAuthStatus("Preparing face authentication...");
 
   await eel.init()();
   const response = await eel.startFaceAuth()();

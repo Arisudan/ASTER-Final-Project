@@ -408,6 +408,11 @@ def _auth_result_fail(message: str) -> dict[str, Any]:
 
 def _face_auth_worker() -> None:
     try:
+        _call_js("setAuthStatus", "Ready for Face Authentication")
+        speak("Ready For Face Authentication")
+        # `speak` is queued asynchronously; wait briefly so voice is heard before camera starts.
+        time.sleep(2.0)
+
         camera_index = int(float(db.get_setting("driver_monitor_camera_index", "0") or 0))
         if camera_index < 0 or camera_index > 1:
             camera_index = 0
@@ -416,7 +421,6 @@ def _face_auth_worker() -> None:
             _auth_result_fail(message)
             return
 
-        speak("Ready For Face Authentication")
         _call_js("setAuthStatus", "Camera started. Scanning face...")
         known_names, known_encodings = _load_known_face_profiles()
 
