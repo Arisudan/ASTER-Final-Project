@@ -357,23 +357,46 @@
         </section>
 
         <section id="appCamera" class="app-pane hidden">
-          <h4>Baby Monitoring Camera</h4>
-          <div class="camera-frame camera-frame--large">
-            <img id="babyCameraFeed" alt="Baby monitoring camera" />
-          </div>
-          <div class="monitor-status-grid">
-            <div class="monitor-badge" id="wakeBadge">Wake: Unknown</div>
-            <div class="monitor-badge" id="moveBadge">Movement: Unknown</div>
-            <div class="monitor-badge" id="outsideBadge">Region: Unknown</div>
-          </div>
-          <p id="babyMonitorStatus">Deep-learning monitor idle.</p>
-          <div class="app-controls-row">
-            <button class="btn btn--soft" id="setRegionBtn" type="button">Set Region (4-click mode)</button>
-            <button class="btn btn--ghost" id="resetRegionBtn" type="button">Reset Region</button>
-          </div>
-          <div class="app-controls-row">
-            <button class="btn btn--primary" id="startBabyBtn" type="button">Start Monitoring</button>
-            <button class="btn btn--ghost" id="stopCameraBtn" type="button">Stop Camera</button>
+          <div class="baby-monitor-container">
+            <header class="baby-monitor-header">
+              <h2>Baby Monitoring</h2>
+              <p class="baby-monitor-subtitle" id="babyMonitorStatus">Deep-learning monitor idle.</p>
+            </header>
+
+            <div class="baby-monitor-main">
+              <div class="camera-display-wrapper">
+                <div class="camera-frame camera-frame--baby">
+                  <img id="babyCameraFeed" alt="Baby monitoring camera" />
+                </div>
+              </div>
+
+              <div class="baby-monitor-info-panel">
+                <div class="monitor-status-section">
+                  <h3>Monitor Status</h3>
+                  <div class="monitor-status-cards">
+                    <div class="status-card" id="wakeBadge">
+                      <span class="status-label">Wake</span>
+                      <span class="status-value">NO</span>
+                    </div>
+                    <div class="status-card" id="moveBadge">
+                      <span class="status-label">Movement</span>
+                      <span class="status-value">NO</span>
+                    </div>
+                    <div class="status-card" id="outsideBadge">
+                      <span class="status-label">Region</span>
+                      <span class="status-value">INSIDE</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="monitor-controls-section">
+                  <button class="btn btn--primary" id="startBabyBtn" type="button">Start Monitoring</button>
+                  <button class="btn btn--ghost" id="stopCameraBtn" type="button">Stop Camera</button>
+                  <button class="btn btn--soft" id="setRegionBtn" type="button">Set Region</button>
+                  <button class="btn btn--soft" id="resetRegionBtn" type="button">Reset Region</button>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 

@@ -311,6 +311,148 @@ button {
   gap: 10px;
 }
 
+.baby-monitor-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: clamp(16px, 2vw, 20px);
+  padding-bottom: clamp(20px, 2vw, 24px);
+}
+
+.baby-monitor-header {
+  text-align: center;
+}
+
+.baby-monitor-header h2 {
+  margin: 0 0 8px 0;
+  font-size: clamp(1.4rem, 3vw, 1.8rem);
+  font-weight: 800;
+  color: #fff;
+}
+
+.baby-monitor-subtitle {
+  margin: 0;
+  font-size: clamp(0.9rem, 1.8vw, 1rem);
+  color: #b3b3b3;
+  font-weight: 500;
+}
+
+.baby-monitor-main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(16px, 2vw, 24px);
+  flex: 1;
+  min-height: 0;
+}
+
+.camera-display-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+.camera-frame--baby {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 4/3;
+  border-radius: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.6) 100%);
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+}
+
+.camera-frame--baby img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+.baby-monitor-info-panel {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 2vw, 24px);
+  min-height: 0;
+}
+
+.monitor-status-section h3 {
+  margin: 0 0 12px 0;
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  font-weight: 700;
+  color: #fff;
+}
+
+.monitor-status-cards {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.4vw, 12px);
+}
+
+.status-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: clamp(14px, 1.8vw, 18px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+}
+
+.status-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.status-label {
+  font-size: clamp(0.85rem, 1.8vw, 0.95rem);
+  color: #b3b3b3;
+  font-weight: 500;
+}
+
+.status-value {
+  font-size: clamp(0.95rem, 2vw, 1.1rem);
+  color: #fff;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(100, 100, 100, 0.3);
+  min-width: 60px;
+  text-align: center;
+}
+
+.status-card.monitor-badge--active .status-value {
+  background: rgba(29, 185, 84, 0.4);
+  color: #1db954;
+}
+
+.status-card.monitor-badge--alert .status-value {
+  background: rgba(255, 92, 92, 0.4);
+  color: #ff5c5c;
+}
+
+.monitor-controls-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(10px, 1.4vw, 14px);
+  margin-top: auto;
+}
+
+.monitor-controls-section button {
+  padding: clamp(12px, 1.6vw, 16px) clamp(14px, 2vw, 18px);
+  font-size: clamp(0.85rem, 1.8vw, 0.95rem);
+  border-radius: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
 .camera-frame {
   height: clamp(160px, 25vw, 230px);
   border-radius: var(--radius-md);
@@ -924,7 +1066,43 @@ select {
   }
 }
 
+@media (max-width: 980px) {
+  .baby-monitor-main {
+    grid-template-columns: 1fr;
+    gap: clamp(14px, 2vw, 18px);
+  }
+
+  .baby-monitor-info-panel {
+    gap: clamp(14px, 2vw, 18px);
+  }
+
+  .monitor-controls-section {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 760px) {
+  .baby-monitor-container {
+    gap: clamp(12px, 1.6vw, 16px);
+  }
+
+  .baby-monitor-main {
+    grid-template-columns: 1fr;
+  }
+
+  .camera-display-wrapper {
+    min-height: 280px;
+  }
+
+  .camera-frame--baby {
+    height: 280px;
+  }
+
+  .monitor-controls-section {
+    grid-template-columns: 1fr;
+    gap: clamp(8px, 1.2vw, 10px);
+  }
+
   .app-grid {
     grid-template-columns: 1fr;
   }
