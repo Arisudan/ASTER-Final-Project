@@ -58,6 +58,8 @@ _camera_lock = threading.Lock()
 _camera_capture: cv2.VideoCapture | None = None
 _camera_owner: str | None = None
 _camera_stop_event = threading.Event()
+_baby_monitor_running = threading.Event()
+_emotion_running = threading.Event()
 
 _vehicle_lock = threading.Lock()
 _vehicle_state = {
@@ -333,10 +335,12 @@ def _handle_voice_command(query: str) -> str:
 
 
 def _emotion_worker() -> None:
+    _emotion_running.set()
     camera_index = int(float(db.get_setting("driver_monitor_camera_index", "0") or 0))
     ready, message = _claim_camera("emotion", camera_index)
     if not ready:
         _call_js("setEmotionResult", {"ok": False, "message": message})
+        _emotion_running.clear()
         return
 
     frames: list[np.ndarray] = []
@@ -389,18 +393,22 @@ def _emotion_worker() -> None:
         _call_js("setEmotionResult", result)
     finally:
         _release_camera("emotion")
+        _emotion_running.clear()
 
 
-def _camera_stream_worker(owner: str) -> None:
-    while not _camera_stop_event.is_set():
-        if _camera_capture is None:
-            break
-        ok, frame = _camera_capture.read()
-        if not ok:
-            continue
-        preview = cv2.flip(frame, 1)
-        _call_js("updateCameraFrame", owner, _encode_frame(preview))
-        time.sleep(0.03)
+def _camera_stream_worker(owner: str, running_event: threading.Event) -> None:
+    try:
+        while not _camera_stop_event.is_set():
+            if _camera_capture is None:
+                break
+            ok, frame = _camera_capture.read()
+            if not ok:
+                continue
+            preview = cv2.flip(frame, 1)
+            _call_js("updateCameraFrame", owner, _encode_frame(preview))
+            time.sleep(0.03)
+    finally:
+        running_event.clear()
 
 
 def _vehicle_worker() -> None:
@@ -453,7 +461,7 @@ def verifyPIN(pin: str) -> dict[str, Any]:
 def openApp(appName: str) -> dict[str, Any]:
     global _active_app
     _active_app = str(appName or "").strip().lower()
-    _call_js("setActiveApp", _active_app)
+    _call_js("openAppFromBackend", _active_app)
     with _vehicle_lock:
         _vehicle_state["mode"] = "driving"
     return {"ok": True, "activeApp": _active_app}
@@ -464,7 +472,7 @@ def closeApp() -> dict[str, Any]:
     global _active_app
     _active_app = ""
     stopCamera()
-    _call_js("setActiveApp", "")
+    _call_js("closeAppFromBackend")
     with _vehicle_lock:
         _vehicle_state["mode"] = "ambient"
     return {"ok": True}
@@ -472,12 +480,19 @@ def closeApp() -> dict[str, Any]:
 
 @eel.expose
 def startBabyMonitoring() -> dict[str, Any]:
+    if _baby_monitor_running.is_set():
+        return {"ok": False, "message": "Baby monitoring is already running."}
+
+    if _emotion_running.is_set():
+        return {"ok": False, "message": "Emotion detection is using camera. Please wait."}
+
     camera_index = int(float(db.get_setting("driver_monitor_camera_index", "0") or 0))
     ready, message = _claim_camera("baby-monitor", camera_index)
     if not ready:
         return {"ok": False, "message": message}
 
-    threading.Thread(target=_camera_stream_worker, args=("baby-monitor",), daemon=True).start()
+    _baby_monitor_running.set()
+    threading.Thread(target=_camera_stream_worker, args=("baby-monitor", _baby_monitor_running), daemon=True).start()
     return {"ok": True, "message": "Baby monitoring started."}
 
 
@@ -486,11 +501,20 @@ def stopCamera() -> dict[str, Any]:
     _release_camera("baby-monitor")
     _release_camera("emotion")
     _release_camera("face-auth")
+    _baby_monitor_running.clear()
     return {"ok": True, "message": "Camera stopped."}
 
 
 @eel.expose
 def startEmotionDetection() -> dict[str, Any]:
+    if _emotion_running.is_set():
+        return {"ok": False, "message": "Emotion detection already running."}
+
+    if _baby_monitor_running.is_set():
+        _release_camera("baby-monitor")
+        _baby_monitor_running.clear()
+        time.sleep(0.12)
+
     threading.Thread(target=_emotion_worker, daemon=True).start()
     return {"ok": True, "message": "Emotion detection started."}
 

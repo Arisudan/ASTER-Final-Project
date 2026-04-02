@@ -115,7 +115,8 @@ function clearPin() {
   updatePinDots();
 }
 
-function openApp(appName) {
+function openApp(appName, options = {}) {
+  const { syncBackend = true, autoStartCamera = true } = options;
   const name = String(appName || "").toLowerCase();
   if (!APP_NAMES.includes(name)) {
     return;
@@ -134,32 +135,60 @@ function openApp(appName) {
   showScreen(SCREENS.app);
   pulseDrivingMode();
 
-  if (window.eel) {
+  if (window.eel && syncBackend) {
     eel.openApp(name)().catch(() => undefined);
-    if (name === "camera") {
-      eel.startBabyMonitoring()().catch(() => undefined);
+  }
+
+  if (window.eel && name === "camera" && autoStartCamera) {
+    eel.startBabyMonitoring()().then((response) => {
+      if (response && response.ok === false && response.message) {
+        showToast(response.message);
+      }
+    }).catch(() => undefined);
+  }
+
+  if (name === "emotion") {
+    const emotionStatus = byId("emotionStatus");
+    if (emotionStatus) {
+      emotionStatus.textContent = "Capture 10 camera samples and map mood to Spotify.";
     }
   }
 }
 
-function closeApp() {
+function closeApp(options = {}) {
+  const { syncBackend = true, stopCamera = true } = options;
   state.activeApp = "";
   byId("appLauncher")?.classList.remove("hidden");
   document.querySelectorAll(".app-pane").forEach((pane) => pane.classList.add("hidden"));
   showScreen(SCREENS.dashboard);
 
-  if (window.eel) {
+  if (window.eel && syncBackend) {
     eel.closeApp()().catch(() => undefined);
-    eel.stopCamera()().catch(() => undefined);
+  }
+
+  if (window.eel && stopCamera) {
+    eel.stopCamera()().then((response) => {
+      if (response && response.ok === false && response.message) {
+        showToast(response.message);
+      }
+    }).catch(() => undefined);
   }
 }
 
 function setActiveApp(appName) {
   if (!appName) {
-    closeApp();
+    closeApp({ syncBackend: false, stopCamera: false });
     return;
   }
-  openApp(appName);
+  openApp(appName, { syncBackend: false, autoStartCamera: appName === "camera" });
+}
+
+function openAppFromBackend(appName) {
+  openApp(appName, { syncBackend: false, autoStartCamera: appName === "camera" });
+}
+
+function closeAppFromBackend() {
+  closeApp({ syncBackend: false, stopCamera: false });
 }
 
 function updateCameraFrame(owner, frameDataUrl) {
@@ -305,7 +334,12 @@ function bindPinPad() {
 }
 
 function bindUI() {
-  byId("retryFaceBtn")?.addEventListener("click", () => eel.startFaceAuth()());
+  byId("retryFaceBtn")?.addEventListener("click", async () => {
+    const response = await eel.startFaceAuth()();
+    if (response && response.ok === false && response.message) {
+      setAuthStatus(response.message);
+    }
+  });
   byId("showPinBtn")?.addEventListener("click", () => byId("pinPanel")?.classList.remove("hidden"));
   byId("pinClearBtn")?.addEventListener("click", clearPin);
 
@@ -363,9 +397,26 @@ function bindUI() {
   byId("mapSearchBtn")?.addEventListener("click", () => runNavigation("mapSearchInput"));
   byId("mapFullSearchBtn")?.addEventListener("click", () => runNavigation("mapFullSearchInput"));
 
-  byId("startBabyBtn")?.addEventListener("click", () => eel.startBabyMonitoring()());
-  byId("stopCameraBtn")?.addEventListener("click", () => eel.stopCamera()());
-  byId("startEmotionBtn")?.addEventListener("click", () => eel.startEmotionDetection()());
+  byId("startBabyBtn")?.addEventListener("click", async () => {
+    const response = await eel.startBabyMonitoring()();
+    if (response && response.message) {
+      showToast(response.message);
+    }
+  });
+
+  byId("stopCameraBtn")?.addEventListener("click", async () => {
+    const response = await eel.stopCamera()();
+    if (response && response.message) {
+      showToast(response.message);
+    }
+  });
+
+  byId("startEmotionBtn")?.addEventListener("click", async () => {
+    const response = await eel.startEmotionDetection()();
+    if (response && response.message) {
+      showToast(response.message);
+    }
+  });
 
   byId("saveSettingsBtn")?.addEventListener("click", async () => {
     const cameraIndex = byId("cameraIndexInput")?.value || "0";
@@ -422,7 +473,10 @@ async function startupSequence() {
   setAuthStatus("Starting camera scan...");
 
   await eel.init()();
-  await eel.startFaceAuth()();
+  const response = await eel.startFaceAuth()();
+  if (response && response.ok === false && response.message) {
+    setAuthStatus(response.message);
+  }
 }
 
 async function refreshSpotifyState() {
@@ -441,6 +495,8 @@ function registerEelCallbacks() {
   eel.expose(onFaceAuthFailed);
   eel.expose(setSpotifyState);
   eel.expose(setNavigationResult);
+  eel.expose(openAppFromBackend);
+  eel.expose(closeAppFromBackend);
   eel.expose(setActiveApp);
   eel.expose(setEmotionResult);
 }
