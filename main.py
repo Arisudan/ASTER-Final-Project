@@ -605,14 +605,12 @@ def _emotion_worker() -> None:
     confidence_threshold = _read_float_setting("emotion_confidence_threshold", 0.60, 0.45, 0.95)
     sample_interval = _read_float_setting("emotion_sample_interval_seconds", 0.18, 0.08, 0.5)
     autoplay_enabled = _setting_bool("emotion_auto_play_enabled", True)
-    deadline = time.time() + max(5.0, min(20.0, sample_target * sample_interval + 4.0))
-    min_samples = max(4, min(sample_target, max(4, sample_target // 2)))
+    deadline = time.time() + max(5.0, min(30.0, sample_target * sample_interval + 5.0))
 
-    vote_counts: Counter[str] = Counter()
-    recent_labels: deque[str] = deque(maxlen=5)
+    emotion_samples: list[str] = []
+    confidence_samples: list[float] = []
+    emotion_confidence_map: dict[str, list[float]] = {}
     sample_count = 0
-    last_label = "neutral"
-    last_confidence = 0.0
 
     _call_js(
         "setEmotionResult",
@@ -629,7 +627,7 @@ def _emotion_worker() -> None:
     )
 
     try:
-        while time.time() < deadline and not _camera_stop_event.is_set():
+        while sample_count < sample_target and time.time() < deadline and not _camera_stop_event.is_set():
             if _camera_capture is None:
                 break
             ok, frame = _camera_capture.read()
@@ -651,21 +649,19 @@ def _emotion_worker() -> None:
                     frame_confidence = 0.0
 
             sample_count += 1
-            vote_counts[emotion] += 1
-            recent_labels.append(emotion)
-            last_label = emotion
-            last_confidence = frame_confidence
+            emotion_samples.append(emotion)
+            confidence_samples.append(frame_confidence)
+            
+            if emotion not in emotion_confidence_map:
+                emotion_confidence_map[emotion] = []
+            emotion_confidence_map[emotion].append(frame_confidence)
 
-            dominant_label, dominant_votes = vote_counts.most_common(1)[0]
-            recent_vote_counts = Counter(recent_labels)
-            recent_label, recent_votes = recent_vote_counts.most_common(1)[0]
-            smoothed_label = recent_label if recent_votes >= dominant_votes else dominant_label
-            vote_confidence = dominant_votes / max(sample_count, 1)
-            recent_confidence = recent_votes / max(len(recent_labels), 1)
-            confidence = max(vote_confidence, recent_confidence, frame_confidence)
+            most_common_emotion = Counter(emotion_samples).most_common(1)[0][0] if emotion_samples else "neutral"
+            avg_confidence = sum(confidence_samples) / len(confidence_samples) if confidence_samples else 0.0
 
             status_message = (
-                f"Analyzing expression... {smoothed_label.title()} detected at {confidence:.0%} confidence."
+                f"Analyzing expression... {most_common_emotion.title()} detected. "
+                f"Sample {sample_count}/{sample_target}"
             )
             _call_js(
                 "setEmotionResult",
@@ -673,8 +669,8 @@ def _emotion_worker() -> None:
                     "ok": True,
                     "stage": "analyzing",
                     "emotion": emotion,
-                    "smoothed_emotion": smoothed_label,
-                    "confidence": round(confidence, 3),
+                    "smoothed_emotion": most_common_emotion,
+                    "confidence": round(avg_confidence, 3),
                     "frame_confidence": round(frame_confidence, 3),
                     "sample_count": sample_count,
                     "sample_target": sample_target,
@@ -682,23 +678,20 @@ def _emotion_worker() -> None:
                 },
             )
 
-            if sample_count >= min_samples and confidence >= confidence_threshold:
-                break
-
             time.sleep(sample_interval)
 
         if sample_count == 0:
             _call_js("setEmotionResult", {"ok": False, "message": "No camera frames captured."})
             return
 
-        dominant_label, dominant_votes = vote_counts.most_common(1)[0]
-        recent_vote_counts = Counter(recent_labels)
-        recent_label, recent_votes = recent_vote_counts.most_common(1)[0]
-        final_label = recent_label if recent_votes >= dominant_votes else dominant_label
-        final_confidence = dominant_votes / max(sample_count, 1)
-        if recent_votes / max(len(recent_labels), 1) > final_confidence:
-            final_confidence = recent_votes / max(len(recent_labels), 1)
-        final_confidence = max(final_confidence, last_confidence)
+        emotion_counts = Counter(emotion_samples)
+        final_label = emotion_counts.most_common(1)[0][0] if emotion_counts else "neutral"
+        
+        final_emotion_confidences = emotion_confidence_map.get(final_label, [0.0])
+        final_confidence = sum(final_emotion_confidences) / len(final_emotion_confidences) if final_emotion_confidences else 0.0
+        
+        overall_avg_confidence = sum(confidence_samples) / len(confidence_samples) if confidence_samples else 0.0
+        final_confidence = max(final_confidence, overall_avg_confidence)
 
         query = _emotion_query_for_label(final_label)
         emotion_keywords = _emotion_keywords_for_label(final_label)
