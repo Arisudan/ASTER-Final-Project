@@ -11,11 +11,6 @@ const state = {
   currentScreen: SCREENS.startup,
   activeApp: "",
   pinInput: "",
-  speed: 0,
-  battery: 92,
-  gear: "P",
-  mode: "ambient",
-  idleTimer: null,
   miniMap: null,
   fullMap: null,
   miniRoute: null,
@@ -80,50 +75,7 @@ function showScreen(screenId) {
   state.currentScreen = screenId;
 }
 
-function setMode(mode) {
-  state.mode = mode === "driving" ? "driving" : "ambient";
-  document.body.dataset.mode = state.mode;
-  const indicator = byId("modeIndicator");
-  if (indicator) {
-    indicator.textContent = state.mode === "driving" ? "Driving" : "Ambient";
-  }
-}
 
-function pulseDrivingMode() {
-  setMode("driving");
-  if (state.idleTimer) {
-    window.clearTimeout(state.idleTimer);
-  }
-  state.idleTimer = window.setTimeout(() => setMode("ambient"), 8000);
-}
-
-function updateVehicleSimulation() {
-  if (state.currentScreen !== SCREENS.dashboard && state.currentScreen !== SCREENS.app) {
-    return;
-  }
-
-  state.speed = Math.max(0, Math.min(120, state.speed + Math.floor(Math.random() * 9) - 3));
-  state.battery = Math.max(20, state.battery - (state.speed > 0 ? 0.03 : 0.01));
-
-  if (state.speed === 0) {
-    state.gear = "P";
-  } else if (state.speed < 15) {
-    state.gear = "D";
-  } else {
-    state.gear = "D";
-  }
-
-  const speedValue = byId("speedValue");
-  const batteryValue = byId("batteryValue");
-  const gearValue = byId("gearValue");
-  if (speedValue) speedValue.textContent = String(state.speed);
-  if (batteryValue) batteryValue.textContent = String(Math.round(state.battery));
-  if (gearValue) gearValue.textContent = state.gear;
-
-  if (state.speed > 0) {
-    setMode("driving");
-  }
-}
 
 function setAuthStatus(text) {
   const authStatus = byId("authStatus");
@@ -294,7 +246,6 @@ function openApp(appName, options = {}) {
   byId(`app${name.charAt(0).toUpperCase() + name.slice(1)}`)?.classList.remove("hidden");
 
   showScreen(SCREENS.app);
-  pulseDrivingMode();
 
   if (window.eel && syncBackend) {
     eel.openApp(name)().catch(() => undefined);
@@ -381,6 +332,7 @@ function onFaceAuthSuccess(userName) {
   setAuthenticated(true);
   showScreen(SCREENS.dashboard);
   showFaceAuthPanel();
+  announce(`Welcome ${userName || "Driver"}`);
 }
 
 function onFaceAuthFailed(message) {
@@ -691,6 +643,7 @@ function bindUI() {
           refreshMapSizes();
         }
       }
+      announce(`Opened ${nav}`);
     });
   });
 
@@ -712,7 +665,7 @@ function bindUI() {
   });
 
   document.querySelectorAll("[data-action='toggle-lights'], [data-action='toggle-climate']").forEach((button) => {
-    button.addEventListener("click", pulseDrivingMode);
+    button.addEventListener("click", () => showToast("Feature not available"));
   });
 
   // Spotify detail tab switching
@@ -735,7 +688,6 @@ function bindUI() {
 
 async function startupSequence() {
   showScreen(SCREENS.startup);
-  setMode("ambient");
 
   await new Promise((resolve) => window.setTimeout(resolve, 2400));
   showScreen(SCREENS.auth);
@@ -779,6 +731,5 @@ window.addEventListener("DOMContentLoaded", async () => {
   registerEelCallbacks();
   await startupSequence();
   await refreshSpotifyState();
-  window.setInterval(updateVehicleSimulation, 1000);
   window.setInterval(refreshSpotifyState, 6000);
 });

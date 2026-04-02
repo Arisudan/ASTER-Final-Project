@@ -313,14 +313,20 @@ button {
   width: min(1360px, 98vw);
   height: calc(100vh - 122px);
   display: grid;
-  grid-template-columns: 220px 1fr 360px;
+  grid-template-columns: 220px 1fr;
   gap: 14px;
   padding: 14px;
 }
 
 .dashboard-left,
-.dashboard-center,
 .dashboard-right {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line-soft);
+  padding: 14px;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.dashboard-center {
   border-radius: var(--radius-lg);
   border: 1px solid var(--line-soft);
   padding: 14px;
@@ -342,37 +348,17 @@ button {
   color: inherit;
 }
 
-.state-block {
-  margin-top: auto;
-  padding-top: 8px;
-  border-top: 1px solid var(--line-soft);
-}
-
 .dashboard-center {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: center;
 }
 
-.car-visual {
-  height: 58%;
-  border-radius: 20px;
-  border: 1px solid var(--line-soft);
-  background:
-    radial-gradient(circle at center, rgba(212, 175, 55, 0.2), transparent 54%),
-    linear-gradient(180deg, rgba(25, 38, 72, 0.5), rgba(10, 14, 26, 0.8));
-}
-
-.vehicle-readout {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-
-.vehicle-readout div {
-  border-radius: 14px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.08);
+.featured-card {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .dashboard-right {

@@ -66,13 +66,7 @@ _camera_stop_event = threading.Event()
 _baby_monitor_running = threading.Event()
 _emotion_running = threading.Event()
 
-_vehicle_lock = threading.Lock()
-_vehicle_state = {
-    "speed": 0,
-    "battery": 92.0,
-    "gear": "P",
-    "mode": "ambient",
-}
+
 
 
 def _call_js(function_name: str, *args) -> None:
@@ -498,23 +492,6 @@ def _camera_stream_worker(owner: str, running_event: threading.Event) -> None:
         running_event.clear()
 
 
-def _vehicle_worker() -> None:
-    while True:
-        with _vehicle_lock:
-            mode = _vehicle_state.get("mode", "ambient")
-            speed = int(_vehicle_state.get("speed", 0))
-            battery = float(_vehicle_state.get("battery", 92))
-            if mode == "driving":
-                speed = max(6, min(120, speed + random.randint(-2, 7)))
-                battery = max(18.0, battery - 0.03)
-            else:
-                speed = max(0, speed - 8)
-                battery = min(100.0, battery + 0.01)
-            _vehicle_state["speed"] = speed
-            _vehicle_state["battery"] = battery
-            _vehicle_state["gear"] = "D" if speed > 0 else "P"
-        time.sleep(1.0)
-
 
 @eel.expose
 def init() -> dict[str, Any]:
@@ -791,7 +768,6 @@ def saveSettings(settings: dict[str, Any]) -> dict[str, str]:
 def _start_background_threads() -> None:
     threading.Thread(target=_voice_worker, daemon=True).start()
     threading.Thread(target=_wake_monitor, daemon=True).start()
-    threading.Thread(target=_vehicle_worker, daemon=True).start()
 
 
 def start(wake_queue=None) -> None:
