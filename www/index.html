@@ -85,9 +85,65 @@
             </aside>
 
             <section class="tablet-center-speed">
-              <div class="speed-ring">
-                <div class="speed-value">0</div>
-                <div class="speed-unit">KM/H</div>
+              <div class="automotive-dashboard">
+                <!-- Primary Speedometer -->
+                <div class="speedometer-primary">
+                  <div class="gauge-outer">
+                    <svg class="gauge-svg" viewBox="0 0 240 240" aria-hidden="true">
+                      <defs>
+                        <linearGradient id="speedGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" style="stop-color:#2fd3c5;stop-opacity:1" />
+                          <stop offset="100%" style="stop-color:#6ef0c4;stop-opacity:1" />
+                        </linearGradient>
+                      </defs>
+                      <!-- Background track -->
+                      <circle cx="120" cy="120" r="100" fill="none" stroke="rgba(244,247,255,0.08)" stroke-width="8"/>
+                      <!-- Active gauge (will be animated by JS) -->
+                      <circle id="speedGaugeFill" cx="120" cy="120" r="100" fill="none" stroke="url(#speedGradient)" stroke-width="8" stroke-dasharray="0 628" stroke-linecap="round"/>
+                      <!-- Tick marks -->
+                      <g id="speedTicks" stroke="rgba(244,247,255,0.3)" stroke-width="1">
+                        <line x1="120" y1="25" x2="120" y2="35" opacity="1"/>
+                        <line x1="190" y1="30" x2="183" y2="37" opacity="0.7"/>
+                        <line x1="215" y1="120" x2="205" y2="120" opacity="0.5"/>
+                        <line x1="190" y1="210" x2="183" y2="203" opacity="0.7"/>
+                      </g>
+                    </svg>
+                    <div class="gauge-center">
+                      <div class="speed-display">
+                        <span class="speed-value" id="dashSpeedValue">0</span>
+                        <span class="speed-unit">KM/H</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Secondary Metrics Panel -->
+                <div class="metrics-panel">
+                  <div class="metric-row">
+                    <div class="metric-item">
+                      <div class="metric-icon rpm">⚙</div>
+                      <div class="metric-value" id="dashRPM">0</div>
+                      <div class="metric-label">RPM</div>
+                    </div>
+                    <div class="metric-item">
+                      <div class="metric-icon fuel">⛽</div>
+                      <div class="metric-value" id="dashFuel">75%</div>
+                      <div class="metric-label">Fuel</div>
+                    </div>
+                  </div>
+                  <div class="metric-row">
+                    <div class="metric-item">
+                      <div class="metric-icon temp">🌡️</div>
+                      <div class="metric-value" id="dashTemp">85°</div>
+                      <div class="metric-label">Coolant</div>
+                    </div>
+                    <div class="metric-item">
+                      <div class="metric-icon battery">🔋</div>
+                      <div class="metric-value" id="dashBattery">12.5V</div>
+                      <div class="metric-label">Battery</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </section>
 

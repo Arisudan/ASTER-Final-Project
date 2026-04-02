@@ -1502,6 +1502,46 @@ function registerEelCallbacks() {
   eel.expose(showDirections);
 }
 
+function updateAutomotiveDashboard() {
+  const currentSpeed = Math.min(120, Math.floor(Math.random() * 130));
+  const rpm = Math.min(6500, Math.floor(Math.random() * 6800));
+  const fuelLevel = 45 + Math.floor(Math.random() * 40);
+  const coolantTemp = 80 + Math.floor(Math.random() * 15);
+  const batteryVoltage = 12.0 + (Math.random() * 0.8);
+  
+  const speedValue = byId("dashSpeedValue");
+  if (speedValue) {
+    speedValue.textContent = currentSpeed;
+  }
+  
+  const speedGaugeFill = byId("speedGaugeFill");
+  if (speedGaugeFill) {
+    const maxDasharray = 628;
+    const speedPercent = currentSpeed / 180;
+    const dasharray = maxDasharray * speedPercent;
+    speedGaugeFill.setAttribute("stroke-dasharray", dasharray + " " + maxDasharray);
+  }
+  
+  const rpmEl = byId("dashRPM");
+  if (rpmEl) {
+    rpmEl.textContent = rpm.toLocaleString();
+  }
+  
+  const fuelEl = byId("dashFuel");
+  if (fuelEl) {
+    fuelEl.textContent = fuelLevel + "%";
+  }
+  
+  const tempEl = byId("dashTemp");
+  if (tempEl) {
+    tempEl.textContent = coolantTemp + "°";
+  }
+  
+  const batteryEl = byId("dashBattery");
+  if (batteryEl) {
+    batteryEl.textContent = batteryVoltage.toFixed(1) + "V";
+  }
+
 window.addEventListener("DOMContentLoaded", async () => {
   bindPinPad();
   bindUI();
@@ -1511,7 +1551,9 @@ window.addEventListener("DOMContentLoaded", async () => {
   await loadSettingsToUI();
   await refreshSpotifyState();
   await refreshBabyMonitorState();
+    updateAutomotiveDashboard();
   window.setInterval(updateDashboardDateTime, 30000);
+    window.setInterval(updateAutomotiveDashboard, 1500);
   window.setInterval(refreshSpotifyState, 6000);
   window.setInterval(refreshBabyMonitorState, 2000);
 });
