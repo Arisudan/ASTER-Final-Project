@@ -601,6 +601,7 @@ select {
   overflow-y: auto;
   padding-bottom: clamp(100px, 12vw, 140px);
   padding-right: 8px;
+  margin-top: clamp(12px, 1.5vw, 20px);
 }
 
 .app-card {
@@ -890,6 +891,7 @@ select {
   .app-grid {
     grid-template-columns: repeat(auto-fit, minmax(clamp(120px, 18vw, 150px), 1fr));
     padding-bottom: clamp(120px, 14vw, 160px);
+    margin-top: clamp(12px, 1.5vw, 20px);
   }
 
   .bottom-nav {
