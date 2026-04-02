@@ -5,7 +5,7 @@ const SCREENS = {
   app: "appScreen",
 };
 
-const APP_NAMES = ["music", "maps", "calls", "camera", "emotion", "settings"];
+const APP_NAMES = ["music", "spotify", "maps", "calls", "camera", "emotion", "settings"];
 
 const state = {
   currentScreen: SCREENS.startup,
@@ -24,6 +24,10 @@ const state = {
   spotifyConnected: false,
   swipeStartX: 0,
   spotifyPlaying: false,
+  authenticated: false,
+  spotifyUser: null,
+  spotifyPlaylists: [],
+  spotifySavedTracks: [],
 };
 
 function byId(id) {
@@ -149,6 +153,129 @@ function showPinPanel() {
   byId("pinPanel")?.classList.remove("hidden");
 }
 
+function setAuthenticated(isAuth) {
+  state.authenticated = isAuth;
+  const navEl = document.querySelector(".bottom-nav");
+  if (navEl) {
+    if (isAuth) {
+      navEl.classList.remove("hidden");
+    } else {
+      navEl.classList.add("hidden");
+    }
+  }
+}
+
+async function loadSpotifyDetailAndOpen() {
+  try {
+    const userResponse = await eel.getSpotifyUserProfile()();
+    const playlistsResponse = await eel.getSpotifyUserPlaylists()();
+    const savedResponse = await eel.getSpotifyUserSavedTracks()();
+    const recentResponse = await eel.getSpotifyRecentlyPlayed()();
+
+    renderSpotifyUserCard(userResponse.user);
+    renderPlaylistsList(playlistsResponse.playlists || []);
+    renderSavedTracksList(savedResponse.tracks || []);
+    renderRecentTracksList(recentResponse.tracks || []);
+
+    openApp("spotify", { syncBackend: false });
+  } catch (error) {
+    showToast("Unable to load Spotify account details.");
+    console.error("Spotify detail loading error:", error);
+  }
+}
+
+function renderSpotifyUserCard(user) {
+  const card = byId("spotifyUserCard");
+  if (!card || !user) return;
+
+  const image = user.images && user.images[0] ? user.images[0].url : "";
+  card.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 12px;">
+      ${image ? `<img src="${image}" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover;" alt="User" />` : ""}
+      <div class="spotify-account-info">
+        <h5>${user.display_name || "Unknown User"}</h5>
+        <p>${user.email || ""}</p>
+        <p>${user.followers || 0} followers ${user.premium ? "• Premium" : ""}</p>
+      </div>
+    </div>
+  `;
+}
+
+function renderPlaylistsList(playlists) {
+  const container = byId("playlistsList");
+  if (!container) return;
+
+  if (!playlists || playlists.length === 0) {
+    container.innerHTML = "<p style=\"padding: 16px; opacity: 0.7;\">No playlists found.</p>";
+    return;
+  }
+
+  container.innerHTML = playlists
+    .map(
+      (p) => `
+      <div class="playlist-item">
+        ${p.image ? `<img src="${p.image}" alt="${p.name}" />` : '<div style="width: 48px; height: 48px; border-radius: 8px; background: rgba(29, 185, 84, 0.2);"></div>'}
+        <div class="playlist-item-info">
+          <h6>${p.name}</h6>
+          <p class="playlist-count">${p.tracks_total} tracks</p>
+          <p>${p.description ? p.description.substring(0, 50) + (p.description.length > 50 ? "..." : "") : "No description"}</p>
+        </div>
+      </div>
+    `
+    )
+    .join("");
+}
+
+function renderSavedTracksList(tracks) {
+  const container = byId("savedTracksList");
+  if (!container) return;
+
+  if (!tracks || tracks.length === 0) {
+    container.innerHTML = "<p style=\"padding: 16px; opacity: 0.7;\">No saved tracks found.</p>";
+    return;
+  }
+
+  container.innerHTML = tracks
+    .map(
+      (t) => `
+      <div class="track-item">
+        ${t.image ? `<img src="${t.image}" alt="${t.name}" />` : '<div style="width: 48px; height: 48px; border-radius: 8px; background: rgba(29, 185, 84, 0.2);"></div>'}
+        <div class="track-item-info">
+          <h6>${t.name}</h6>
+          <p>${t.artists}</p>
+          <p style="font-size: 0.75rem; opacity: 0.6;">${t.album}</p>
+        </div>
+      </div>
+    `
+    )
+    .join("");
+}
+
+function renderRecentTracksList(tracks) {
+  const container = byId("recentTracksList");
+  if (!container) return;
+
+  if (!tracks || tracks.length === 0) {
+    container.innerHTML = "<p style=\"padding: 16px; opacity: 0.7;\">No recently played tracks found.</p>";
+    return;
+  }
+
+  container.innerHTML = tracks
+    .map(
+      (t) => `
+      <div class="track-item">
+        ${t.image ? `<img src="${t.image}" alt="${t.name}" />` : '<div style="width: 48px; height: 48px; border-radius: 8px; background: rgba(29, 185, 84, 0.2);"></div>'}
+        <div class="track-item-info">
+          <h6>${t.name}</h6>
+          <p>${t.artists}</p>
+          <p style="font-size: 0.75rem; opacity: 0.6;">${t.album}</p>
+        </div>
+      </div>
+    `
+    )
+    .join("");
+}
+
 function openApp(appName, options = {}) {
   const { syncBackend = true, autoStartCamera = true } = options;
   const name = String(appName || "").toLowerCase();
@@ -251,6 +378,7 @@ function updateCameraFrame(owner, frameDataUrl) {
 
 function onFaceAuthSuccess(userName) {
   setAuthStatus(`Welcome ${userName || "Driver"}. Access granted.`);
+  setAuthenticated(true);
   showScreen(SCREENS.dashboard);
   showFaceAuthPanel();
 }
@@ -444,7 +572,7 @@ function bindUI() {
   });
 
   byId("backToDashboard")?.addEventListener("click", closeApp);
-  byId("expandMusicBtn")?.addEventListener("click", () => openApp("music"));
+  byId("expandMusicBtn")?.addEventListener("click", () => loadSpotifyDetailAndOpen());
   byId("expandMapBtn")?.addEventListener("click", () => openApp("maps"));
 
   byId("playPauseBtn")?.addEventListener("click", async () => {
@@ -585,6 +713,23 @@ function bindUI() {
 
   document.querySelectorAll("[data-action='toggle-lights'], [data-action='toggle-climate']").forEach((button) => {
     button.addEventListener("click", pulseDrivingMode);
+  });
+
+  // Spotify detail tab switching
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const tabName = btn.getAttribute("data-tab");
+      if (!tabName) return;
+
+      document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach((c) => c.classList.add("hidden"));
+
+      btn.classList.add("active");
+      const content = byId(`${tabName}TracksList`) || byId(`${tabName}List`);
+      if (content) {
+        content.classList.remove("hidden");
+      }
+    });
   });
 }
 

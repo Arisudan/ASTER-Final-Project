@@ -27,6 +27,10 @@ from Engine.spotify_backend import (
     get_access_token as get_spotify_access_token,
     get_current_track as get_spotify_current_track,
     get_player_state as get_spotify_state,
+    get_recently_played as get_spotify_recently_played,
+    get_user_playlists as get_spotify_user_playlists,
+    get_user_profile as get_spotify_user_profile,
+    get_user_saved_tracks as get_spotify_user_saved_tracks,
     next_track as spotify_next_track,
     pause_music as spotify_pause_music,
     play_music as spotify_play_music,
@@ -657,6 +661,26 @@ def connectSpotify() -> dict[str, Any]:
 @eel.expose
 def getSpotifyAccessToken() -> str:
     return get_spotify_access_token()
+
+
+@eel.expose
+def getSpotifyUserProfile() -> dict[str, Any]:
+    return get_spotify_user_profile()
+
+
+@eel.expose
+def getSpotifyUserPlaylists() -> dict[str, Any]:
+    return get_spotify_user_playlists(limit=50)
+
+
+@eel.expose
+def getSpotifyUserSavedTracks() -> dict[str, Any]:
+    return get_spotify_user_saved_tracks(limit=50)
+
+
+@eel.expose
+def getSpotifyRecentlyPlayed() -> dict[str, Any]:
+    return get_spotify_recently_played(limit=50)
 
 
 @eel.expose

@@ -380,3 +380,110 @@ def toggle_repeat(mode: str) -> dict[str, Any]:
 
 def search_and_play(query: str) -> dict[str, Any]:
     return play_music(query)
+
+
+def get_user_profile() -> dict[str, Any]:
+    """Fetch and return current Spotify user profile information."""
+    client = _get_client()
+    if client is None:
+        return {"connected": False, "message": "Spotify is not configured.", "user": None}
+
+    try:
+        user = client.current_user()
+        return {
+            "connected": True,
+            "message": "User profile loaded.",
+            "user": {
+                "display_name": user.get("display_name") or user.get("id") or "Unknown User",
+                "email": user.get("email", ""),
+                "followers": user.get("followers", {}).get("total", 0),
+                "premium": user.get("product") == "premium" if user.get("product") else False,
+                "id": user.get("id", ""),
+                "external_urls": user.get("external_urls", {}),
+                "images": user.get("images", []),
+            },
+        }
+    except Exception as exc:
+        return {"connected": False, "message": f"Unable to fetch user profile: {exc}", "user": None}
+
+
+def get_user_playlists(limit: int = 20) -> dict[str, Any]:
+    """Fetch and return current user's playlists."""
+    client = _get_client()
+    if client is None:
+        return {"connected": False, "message": "Spotify is not configured.", "playlists": []}
+
+    try:
+        result = client.current_user_playlists(limit=limit)
+        playlists = []
+        for item in result.get("items", []):
+            playlists.append({
+                "id": item.get("id", ""),
+                "name": item.get("name", "Untitled"),
+                "description": item.get("description", ""),
+                "tracks_total": item.get("tracks", {}).get("total", 0),
+                "image": item.get("images", [{}])[0].get("url", "") if item.get("images") else "",
+                "external_urls": item.get("external_urls", {}),
+            })
+        return {"connected": True, "message": f"Loaded {len(playlists)} playlists.", "playlists": playlists}
+    except Exception as exc:
+        return {"connected": False, "message": f"Unable to fetch playlists: {exc}", "playlists": []}
+
+
+def get_user_saved_tracks(limit: int = 20) -> dict[str, Any]:
+    """Fetch and return current user's saved (liked) tracks."""
+    client = _get_client()
+    if client is None:
+        return {"connected": False, "message": "Spotify is not configured.", "tracks": []}
+
+    try:
+        result = client.current_user_saved_tracks(limit=limit)
+        tracks = []
+        for item in result.get("items", []):
+            track = item.get("track", {})
+            artists = track.get("artists", [])
+            album = track.get("album", {})
+            images = album.get("images", []) if album else []
+            tracks.append({
+                "id": track.get("id", ""),
+                "name": track.get("name", "Untitled"),
+                "artists": ", ".join(artist.get("name", "Unknown") for artist in artists),
+                "album": album.get("name", "Unknown Album") if album else "Unknown Album",
+                "duration_ms": track.get("duration_ms", 0),
+                "image": images[0].get("url", "") if images and isinstance(images[0], dict) else "",
+                "uri": track.get("uri", ""),
+                "external_urls": track.get("external_urls", {}),
+            })
+        return {"connected": True, "message": f"Loaded {len(tracks)} saved tracks.", "tracks": tracks}
+    except Exception as exc:
+        return {"connected": False, "message": f"Unable to fetch saved tracks: {exc}", "tracks": []}
+
+
+def get_recently_played(limit: int = 20) -> dict[str, Any]:
+    """Fetch and return recently played tracks."""
+    client = _get_client()
+    if client is None:
+        return {"connected": False, "message": "Spotify is not configured.", "tracks": []}
+
+    try:
+        result = client.current_user_recently_played(limit=limit)
+        tracks = []
+        for item in result.get("items", []):
+            track = item.get("track", {})
+            artists = track.get("artists", [])
+            album = track.get("album", {})
+            images = album.get("images", []) if album else []
+            tracks.append({
+                "id": track.get("id", ""),
+                "name": track.get("name", "Untitled"),
+                "artists": ", ".join(artist.get("name", "Unknown") for artist in artists),
+                "album": album.get("name", "Unknown Album") if album else "Unknown Album",
+                "duration_ms": track.get("duration_ms", 0),
+                "image": images[0].get("url", "") if images and isinstance(images[0], dict) else "",
+                "played_at": item.get("played_at", ""),
+                "uri": track.get("uri", ""),
+            })
+        return {"connected": True, "message": f"Loaded {len(tracks)} recently played tracks.", "tracks": tracks}
+    except Exception as exc:
+        return {"connected": False, "message": f"Unable to fetch recently played tracks: {exc}", "tracks": []}
+

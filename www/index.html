@@ -154,6 +154,19 @@
           </div>
         </section>
 
+        <section id="appSpotifyDetail" class="app-pane hidden">
+          <h4>Your Spotify Account</h4>
+          <div id="spotifyUserCard" class="spotify-account-card"></div>
+          <div class="app-content-tabs">
+            <button class="tab-btn active" data-tab="playlists">Playlists</button>
+            <button class="tab-btn" data-tab="saved">Saved Tracks</button>
+            <button class="tab-btn" data-tab="recent">Recently Played</button>
+          </div>
+          <div id="playlistsList" class="tab-content active"></div>
+          <div id="savedTracksList" class="tab-content hidden"></div>
+          <div id="recentTracksList" class="tab-content hidden"></div>
+        </section>
+
         <section id="appMaps" class="app-pane hidden">
           <div class="app-controls-row">
             <input id="mapFullSearchInput" type="text" placeholder="Navigate to..." />
@@ -206,7 +219,7 @@
       </div>
     </section>
 
-    <nav class="bottom-nav">
+    <nav class="bottom-nav hidden">
       <button data-nav="home" type="button" aria-label="Home">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5L12 3l9 7.5V21h-6v-6H9v6H3z"/></svg>
       </button>
