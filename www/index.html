@@ -3,395 +3,201 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ASTER</title>
+  <title>ASTER Automotive AI</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
   <script type="text/javascript" src="/eel.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
-  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
-  <script src="https://sdk.scdn.co/spotify-player.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script defer src="main.js"></script>
 </head>
 <body data-mode="ambient">
-  <main class="app-shell">
-    <div id="liveRegion" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
-    ﻿    <section id="loader" class="screen screen--active screen--ambient">
-      <div class="glass-card loader-card" id="simple-loader" data-aos="fade-up" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 60px 40px; width: min(500px, 90vw);">
+  <div id="liveRegion" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 
-<svg class="brand-badge brand-badge--ambient aster-prism" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 80px; height: 80px; margin-bottom: 24px;">
-  <path d="M50 5 L10 85 L90 85 Z" fill="url(#silver-outer)" />
-  <path d="M50 5 L10 85 L30 85 L50 45 Z" fill="#E5E5E5" />
-  <path d="M50 5 L30 85 L50 55 Z" fill="#B0B0B0" />
-  <path d="M50 5 L90 85 L70 85 L50 45 Z" fill="#D0D0D0" />
-  <path d="M50 5 L70 85 L50 55 Z" fill="#909090" />
-  <!-- Central Gold Prism -->
-  <path d="M50 25 L30 65 L70 65 Z" fill="url(#gold-core)" />
-  <!-- Gold Facets -->
-  <path d="M50 25 L30 65 L50 60 Z" fill="#FFE87C" />
-  <path d="M50 25 L70 65 L50 60 Z" fill="#D4AF37" />
-  <path d="M30 65 L70 65 L50 60 Z" fill="#B58B12" />
-
-  <defs>
-    <linearGradient id="silver-outer" x1="0" y1="0" x2="100" y2="100">
-      <stop offset="0%" stop-color="#FFFFFF"/>
-      <stop offset="50%" stop-color="#C0C0C0"/>
-      <stop offset="100%" stop-color="#505050"/>
-    </linearGradient>
-    <linearGradient id="gold-core" x1="50" y1="25" x2="50" y2="65">
-      <stop offset="0%" stop-color="#FFF0A0"/>
-      <stop offset="100%" stop-color="#D4AF37"/>
-    </linearGradient>
-  </defs>
-</svg>
-
-        <h1 style="font-family: 'Montserrat', sans-serif; font-size: 1.8rem; margin: 0 0 10px 0;">Booting ASTER</h1>
-        <p style="color: var(--driving-muted); margin: 0 0 30px 0;">Initializing authentication and services...</p>
-        
-        <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; position: relative;">
-            <div style="position: absolute; top: 0; left: 0; height: 100%; width: 40%; background: var(--driving-accent); animation: slide 1.5s infinite ease-in-out; border-radius: 10px;"></div>
+  <main class="shell">
+    <section id="startupScreen" class="screen screen--active">
+      <div class="startup-logo-wrap">
+        <div class="startup-logo glow-pulse">
+          <span class="logo-triangle logo-triangle--outer"></span>
+          <span class="logo-triangle logo-triangle--inner"></span>
         </div>
+        <h1>ASTER</h1>
+        <p>Dynamic Prism Automotive Intelligence</p>
       </div>
     </section>
 
-
-<section id="face-auth" class="screen screen--hidden screen--ambient">
-      <div class="auth-panel glass-card" data-aos="zoom-in">
-        <img class="auth-art" src="assets/face-scan.svg" alt="Face scan" />
-        <div class="scan-orb">
-          <span class="scan-line"></span>
-          <span class="scan-line scan-line--alt"></span>
+    <section id="authScreen" class="screen">
+      <div class="auth-card panel">
+        <h2>Face Authentication</h2>
+        <p id="authStatus">Starting camera scan...</p>
+        <div class="camera-frame">
+          <img id="authCameraFeed" alt="Face authentication camera" />
         </div>
-        <h2>Face Authentication Required</h2>
-        <p id="auth-status">Align your face with the camera to continue.</p>
         <div class="auth-actions">
-          <button id="authEnrollButton" type="button" class="btn btn--soft">Register Face</button>
-          <button id="authSettingsButton" type="button" class="btn btn--ghost">Settings</button>
+          <button class="btn btn--ghost" id="retryFaceBtn" type="button">Retry Face Scan</button>
+          <button class="btn btn--soft" id="showPinBtn" type="button">Use PIN</button>
+        </div>
+      </div>
+
+      <div id="pinPanel" class="pin-card panel hidden">
+        <h3>Enter Security PIN</h3>
+        <p>Default PIN: 2468</p>
+        <div id="pinDots" class="pin-dots" aria-label="PIN input">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div id="pinPad" class="pin-pad"></div>
+        <div class="pin-actions">
+          <button class="btn btn--ghost" id="pinClearBtn" type="button">Clear</button>
+          <button class="btn btn--primary" id="pinSubmitBtn" type="button">Unlock</button>
         </div>
       </div>
     </section>
 
-    <section id="face-enrollment" class="screen screen--hidden screen--ambient">
-      <div class="auth-panel enrollment-panel glass-card" data-aos="zoom-in">
-        <div class="scan-orb scan-orb--enroll">
-          <span class="scan-line"></span>
-          <span class="scan-line scan-line--alt"></span>
-        </div>
-        <h2>Face Enrollment</h2>
-        <p id="enrollment-status">Enter a name, then capture a face profile.</p>
-        <div class="enrollment-form">
-          <input id="enrollmentName" type="text" placeholder="Profile name" autocomplete="off" />
-          <div class="auth-actions">
-            <button id="enrollmentSubmit" type="button" class="btn btn--primary">Save Face</button>
-            <button id="enrollmentCancel" type="button" class="btn btn--ghost">Back</button>
+    <section id="dashboardScreen" class="screen">
+      <div class="dashboard panel">
+        <aside class="dashboard-left">
+          <h3>Quick Controls</h3>
+          <button class="tile-btn" data-action="toggle-lights">Lights</button>
+          <button class="tile-btn" data-action="toggle-climate">Climate</button>
+          <button class="tile-btn" data-open-app="settings">Settings</button>
+          <div class="state-block">
+            <p>Mode</p>
+            <strong id="modeIndicator">Ambient</strong>
           </div>
-        </div>
-      </div>
-    </section>
+        </aside>
 
-    <section id="face-auth-success" class="screen screen--hidden screen--ambient">
-      <div class="success-panel glass-card" data-aos="fade-up">
-        <div class="success-mark">✔</div>
-        <h2>Authentication Successful</h2>
-        <p>Access granted. Welcome to ASTER.</p>
-      </div>
-    </section>
-
-    <section id="main-dashboard" class="screen screen--hidden screen--driving">
-      <div class="dashboard-shell">
-        <header class="topbar glass-panel">
-          <div class="topbar-brand">
-            
-<svg class="brand-badge aster-prism" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M50 5 L10 85 L90 85 Z" fill="url(#silver-outer)" />
-  <path d="M50 5 L10 85 L30 85 L50 45 Z" fill="#E5E5E5" />
-  <path d="M50 5 L30 85 L50 55 Z" fill="#B0B0B0" />
-  <path d="M50 5 L90 85 L70 85 L50 45 Z" fill="#D0D0D0" />
-  <path d="M50 5 L70 85 L50 55 Z" fill="#909090" />
-  <!-- Central Gold Prism -->
-  <path d="M50 25 L30 65 L70 65 Z" fill="url(#gold-core)" />
-  <!-- Gold Facets -->
-  <path d="M50 25 L30 65 L50 60 Z" fill="#FFE87C" />
-  <path d="M50 25 L70 65 L50 60 Z" fill="#D4AF37" />
-  <path d="M30 65 L70 65 L50 60 Z" fill="#B58B12" />
-
-  <defs>
-    <linearGradient id="silver-outer" x1="0" y1="0" x2="100" y2="100">
-      <stop offset="0%" stop-color="#FFFFFF"/>
-      <stop offset="50%" stop-color="#C0C0C0"/>
-      <stop offset="100%" stop-color="#505050"/>
-    </linearGradient>
-    <linearGradient id="gold-core" x1="50" y1="25" x2="50" y2="65">
-      <stop offset="0%" stop-color="#FFF0A0"/>
-      <stop offset="100%" stop-color="#D4AF37"/>
-    </linearGradient>
-  </defs>
-</svg>
-
+        <section class="dashboard-center">
+          <div class="car-visual"></div>
+          <div class="vehicle-readout">
             <div>
-              <p class="eyebrow">Automotive AI Infotainment</p>
-              <h1>ASTER</h1>
+              <p>Speed</p>
+              <strong><span id="speedValue">0</span> km/h</strong>
+            </div>
+            <div>
+              <p>Gear</p>
+              <strong id="gearValue">P</strong>
+            </div>
+            <div>
+              <p>Battery</p>
+              <strong><span id="batteryValue">92</span>%</strong>
             </div>
           </div>
-          <div class="topbar-meta">
-            <div class="meta-pill"><span>Time</span><strong id="live-clock">--:-- --</strong></div>
-            <div class="meta-pill"><span>Date</span><strong id="live-date">---</strong></div>
-            <div class="meta-pill"><span>Weather</span><strong id="weatherValue">--</strong></div>
-            <div class="meta-pill meta-pill--spotify"><span>Spotify</span><strong id="spotifyConnectionState">Disconnected</strong></div>
-            <button id="modeToggleButton" type="button" class="mode-toggle-button" aria-label="Toggle dark mode intensity">Dark Mode</button>
-          </div>
-        </header>
-
-        <section class="dashboard-grid">
-          <aside class="left-column" data-aos="fade-right">
-            <article class="panel-card glass-panel seat-card">
-              <div class="panel-heading">
-                <div>
-                  <p class="eyebrow">Driver Controls</p>
-                  <h3>Seat / Cabin</h3>
-                </div>
-                <span class="panel-tag">Dark</span>
-              </div>
-              <div class="seat-visual">
-                <div class="seat-window"></div>
-                <div class="seat-dash"></div>
-                <div class="seat-seat"></div>
-                <div class="seat-wheel"></div>
-                <div class="seat-ambient"></div>
-                <div class="seat-line seat-line--one"></div>
-                <div class="seat-line seat-line--two"></div>
-                <div class="seat-line seat-line--three"></div>
-              </div>
-              <div class="seat-actions">
-                <button type="button" data-seat-action="lights" class="chip-button">Lights</button>
-                <button type="button" data-seat-action="climate" class="chip-button">Climate</button>
-                <button type="button" data-seat-action="settings" class="chip-button">Settings</button>
-              </div>
-              <div class="status-row">
-                <div><span>Lights</span><strong id="seatLightsState">Off</strong></div>
-                <div><span>Climate</span><strong id="climateState">72°F</strong></div>
-              </div>
-            </article>
-
-            <article class="panel-card glass-panel voice-card">
-              <div class="panel-heading">
-                <div>
-                  <p class="eyebrow">Voice Assistant</p>
-                  <h3>Command Center</h3>
-                </div>
-                <span class="panel-tag">Live</span>
-              </div>
-              <div class="voice-status">
-                <div class="voice-orb" id="voiceOrb"></div>
-                <div>
-                  <p id="recognitionText">Awaiting voice command.</p>
-                  <small id="responseText">System ready.</small>
-                </div>
-              </div>
-              <div class="voice-row">
-                <input id="voiceCommand" type="text" placeholder="Speak or type a command" autocomplete="off" />
-                <button id="micButton" type="button" class="mic-button" aria-label="Capture voice command">
-                  <span></span>
-                </button>
-              </div>
-              <div class="voice-actions">
-                <button type="button" id="voiceAssistButton" class="btn btn--primary">Voice Assistant</button>
-                <button type="button" id="homeButton" class="btn btn--ghost">Home</button>
-              </div>
-            </article>
-          </aside>
-
-          <section class="center-column" data-aos="zoom-in">
-            <article class="panel-card glass-panel car-card">
-              <div class="panel-heading panel-heading--center">
-                <div>
-                  <p class="eyebrow">Vehicle State</p>
-                  <h3>Driving View</h3>
-                </div>
-                <div class="gear-strip" id="gearStrip">
-                  <span data-gear="P">P</span>
-                  <span data-gear="R">R</span>
-                  <span data-gear="N">N</span>
-                  <span data-gear="D">D</span>
-                </div>
-              </div>
-
-              <div class="drive-layout">
-                <div class="drive-hero">
-                  <div class="car-visual">
-                    <div class="car-top"></div>
-                    <div class="car-body"></div>
-                    <div class="car-cabin"></div>
-                    <div class="car-light car-light--left"></div>
-                    <div class="car-light car-light--right"></div>
-                    <div class="indicator indicator--left"></div>
-                    <div class="indicator indicator--right"></div>
-                  </div>
-
-                  <div class="drive-summary">
-                    <div class="speed-block">
-                      <span class="eyebrow">Speed</span>
-                      <div class="speed-readout"><strong id="speedValue">0</strong><span>mph</span></div>
-                    </div>
-                    <div class="gauge-wrap">
-                      <canvas id="speedGauge" width="260" height="260"></canvas>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="drive-stack">
-                  <div class="metric-card"><span>Battery</span><strong id="batteryValue">91%</strong></div>
-                  <div class="metric-card"><span>Autopilot</span><strong id="autopilotValue">Standby</strong></div>
-                  <div class="metric-card"><span>Drive Mode</span><strong id="modeValue">Dark+</strong></div>
-                </div>
-              </div>
-            </article>
-          </section>
-
-          <aside class="right-column" data-aos="fade-left">
-            <article class="panel-card glass-panel spotify-card">
-              <div class="panel-heading">
-                <div>
-                  <p class="eyebrow">Spotify Player</p>
-                  <h3>Now Playing</h3>
-                </div>
-                <button id="connectSpotifyButton" type="button" class="chip-button chip-button--primary">Connect Spotify</button>
-              </div>
-
-              <div class="spotify-artwork-wrap">
-                <img id="spotifyArtwork" alt="Album cover" class="spotify-artwork" src="https://via.placeholder.com/320x320?text=Spotify" />
-                <div class="spotify-artwork-glow"></div>
-              </div>
-
-              <div class="spotify-details">
-                <strong id="spotifyTrackTitle">Spotify is not connected</strong>
-                <span id="spotifyTrackArtist">Sign in to start playback.</span>
-                <small id="spotifyTrackAlbum">Web Playback SDK ready.</small>
-              </div>
-
-              <div class="progress-shell">
-                <div class="progress-bar"><span id="spotifyProgressFill"></span></div>
-                <div class="progress-meta"><span id="spotifyProgressCurrent">0:00</span><span id="spotifyProgressTotal">0:00</span></div>
-              </div>
-
-              <div class="spotify-controls">
-                <button id="spotifyPrevButton" type="button" class="control-button">⏮</button>
-                <button id="spotifyPlayPauseButton" type="button" class="control-button control-button--primary">▶</button>
-                <button id="spotifyNextButton" type="button" class="control-button">⏭</button>
-              </div>
-
-              <div class="spotify-options">
-                <label><input id="spotifyShuffleToggle" type="checkbox" /> Shuffle</label>
-                <label><input id="spotifyRepeatToggle" type="checkbox" /> Repeat</label>
-              </div>
-
-              <div class="spotify-search">
-                <input id="spotifySearchInput" type="text" placeholder="Search a song to play" />
-                <button id="spotifySearchButton" type="button" class="btn btn--primary">Play</button>
-              </div>
-
-              <div class="volume-row">
-                <span>Volume</span>
-                <input id="spotifyVolumeSlider" type="range" min="0" max="100" value="65" />
-              </div>
-            </article>
-
-            <article class="panel-card glass-panel map-card">
-              <div class="panel-heading">
-                <div>
-                  <p class="eyebrow">Navigation</p>
-                  <h3>Route Preview</h3>
-                </div>
-                <button id="openMapsButton" type="button" class="chip-button">Open Maps</button>
-              </div>
-              <div class="map-visual">
-                <div class="map-grid"></div>
-                <div class="map-road map-road--main"></div>
-                <div class="map-road map-road--cross"></div>
-                <div class="map-route"></div>
-                <div class="map-pin"></div>
-              </div>
-              <div class="map-footer">
-                <span>Destination</span>
-                <strong id="mapStatus">Ready for navigation</strong>
-              </div>
-            </article>
-          </aside>
         </section>
 
-        <nav class="bottom-bar glass-panel">
-          <button type="button" id="bottomHomeButton">Home</button>
-          <button type="button" id="bottomVoiceButton">Voice Assistant</button>
-          <button type="button" id="bottomMusicButton">Music</button>
-          <button type="button" id="bottomMapsButton">Maps</button>
-          <button type="button" id="bottomSettingsButton">Settings</button>
-        </nav>
+        <section class="dashboard-right">
+          <article class="spotify-card panel-lite">
+            <div class="card-head">
+              <h4>Spotify</h4>
+              <button class="icon-btn" id="expandMusicBtn" type="button">Expand</button>
+            </div>
+            <p id="trackTitle">Nothing playing</p>
+            <p id="trackMeta">Connect Spotify to begin</p>
+            <div class="player-controls">
+              <button class="icon-btn" id="prevBtn" type="button">Prev</button>
+              <button class="icon-btn" id="playPauseBtn" type="button">Play</button>
+              <button class="icon-btn" id="nextBtn" type="button">Next</button>
+            </div>
+          </article>
+
+          <article class="map-card panel-lite">
+            <div class="card-head">
+              <h4>Maps</h4>
+              <button class="icon-btn" id="expandMapBtn" type="button">Expand</button>
+            </div>
+            <div class="map-search-row">
+              <input id="mapSearchInput" type="text" placeholder="Search destination" />
+              <button class="icon-btn" id="mapSearchBtn" type="button">Go</button>
+            </div>
+            <div id="miniMap" class="map-box"></div>
+          </article>
+        </section>
       </div>
     </section>
 
-    <div id="settingsDrawer" class="settings-drawer" aria-hidden="true">
-      <div class="settings-drawer__sheet glass-card" data-aos="fade-left">
-        <div class="panel-heading">
-          <div>
-            <p class="eyebrow">System Settings</p>
-            <h3>Control Center</h3>
+    <section id="appScreen" class="screen">
+      <div class="app-shell panel">
+        <button id="backToDashboard" class="back-arrow" type="button" aria-label="Back to dashboard">◀</button>
+        <header class="app-header">
+          <h3 id="activeAppTitle">App</h3>
+        </header>
+
+        <div id="appLauncher" class="app-grid">
+          <button class="app-card" data-open-app="music">Music</button>
+          <button class="app-card" data-open-app="maps">Maps</button>
+          <button class="app-card" data-open-app="calls">Calls</button>
+          <button class="app-card" data-open-app="camera">Camera</button>
+          <button class="app-card" data-open-app="emotion">Emotion AI</button>
+          <button class="app-card" data-open-app="settings">Settings</button>
+        </div>
+
+        <section id="appMusic" class="app-pane hidden">
+          <div class="app-controls-row">
+            <input id="musicQueryInput" type="text" placeholder="Play a song or artist" />
+            <button class="btn btn--primary" id="musicPlayQueryBtn" type="button">Play</button>
           </div>
-          <button id="closeSettingsButton" type="button" class="chip-button">Close</button>
-        </div>
+          <div class="player-controls large-controls">
+            <button class="icon-btn" id="musicPrevBtn" type="button">Prev</button>
+            <button class="icon-btn" id="musicPlayBtn" type="button">Play/Pause</button>
+            <button class="icon-btn" id="musicNextBtn" type="button">Next</button>
+          </div>
+          <div class="volume-row">
+            <label for="volumeSlider">Volume</label>
+            <input id="volumeSlider" type="range" min="0" max="100" value="50" />
+          </div>
+        </section>
 
-        <div class="drawer-grid">
-          <section class="drawer-section">
-            <h4>Assistant</h4>
-            <label>
-              <span>Name</span>
-              <input id="assistantNameInput" type="text" />
-            </label>
-            <label>
-              <span>Speech Rate</span>
-              <input id="speechRateInput" type="number" min="120" max="240" step="1" />
-            </label>
-            <label class="toggle-row"><input id="wakeWordToggle" type="checkbox" /> Wake word enabled</label>
-          </section>
+        <section id="appMaps" class="app-pane hidden">
+          <div class="app-controls-row">
+            <input id="mapFullSearchInput" type="text" placeholder="Navigate to..." />
+            <button class="btn btn--primary" id="mapFullSearchBtn" type="button">Navigate</button>
+          </div>
+          <div id="fullMap" class="map-box map-box--large"></div>
+          <p id="navSummary">No route selected.</p>
+        </section>
 
-          <section class="drawer-section">
-            <h4>Spotify</h4>
-            <label>
-              <span>Volume</span>
-              <input id="defaultSpotifyVolumeInput" type="number" min="0" max="100" step="1" />
-            </label>
-            <label>
-              <span>Default Search</span>
-              <input id="defaultSpotifyQueryInput" type="text" />
-            </label>
-            <button id="saveSettingsButton" type="button" class="btn btn--primary">Save Settings</button>
-          </section>
+        <section id="appCalls" class="app-pane hidden">
+          <h4>Calls (Mock / ADB)</h4>
+          <p>Call module placeholder for Android bridge.</p>
+        </section>
 
-          <section class="drawer-section drawer-section--full">
-            <h4>Face Profiles</h4>
-            <div id="faceProfilesList" class="profile-list"></div>
-            <button id="openEnrollmentButton" type="button" class="btn btn--soft">Enroll New Face</button>
-          </section>
+        <section id="appCamera" class="app-pane hidden">
+          <h4>Baby Monitoring Camera</h4>
+          <div class="camera-frame camera-frame--large">
+            <img id="babyCameraFeed" alt="Baby monitoring camera" />
+          </div>
+          <div class="app-controls-row">
+            <button class="btn btn--primary" id="startBabyBtn" type="button">Start Monitoring</button>
+            <button class="btn btn--ghost" id="stopCameraBtn" type="button">Stop Camera</button>
+          </div>
+        </section>
 
-          <section class="drawer-section drawer-section--full">
-            <h4>User Presets</h4>
-            <div id="settingsPresetsList" class="profile-list"></div>
-            <div class="drawer-actions">
-              <button id="savePresetButton" type="button" class="btn btn--primary">Save My Preset</button>
-              <button id="refreshPresetsButton" type="button" class="btn btn--ghost">Refresh</button>
-            </div>
-          </section>
+        <section id="appEmotion" class="app-pane hidden">
+          <h4>Emotion AI Music</h4>
+          <p id="emotionStatus">Capture 10 camera samples and map mood to Spotify.</p>
+          <button class="btn btn--primary" id="startEmotionBtn" type="button">Start Emotion Detection</button>
+        </section>
 
-          <section class="drawer-section drawer-section--full">
-            <h4>Spotify Status</h4>
-            <div id="spotifyDeviceStatus" class="drawer-status">Spotify not connected.</div>
-          </section>
-        </div>
+        <section id="appSettings" class="app-pane hidden">
+          <h4>System Settings</h4>
+          <div class="settings-row">
+            <label for="cameraIndexInput">Camera Index</label>
+            <input id="cameraIndexInput" type="number" min="0" max="5" value="0" />
+          </div>
+          <button class="btn btn--primary" id="saveSettingsBtn" type="button">Save</button>
+        </section>
       </div>
-    </div>
+    </section>
+
+    <nav class="bottom-nav">
+      <button data-nav="home" type="button">Home</button>
+      <button data-nav="voice" type="button">Voice</button>
+      <button data-nav="music" type="button">Music</button>
+      <button data-nav="maps" type="button">Maps</button>
+      <button data-nav="camera" type="button">Camera</button>
+      <button data-nav="settings" type="button">Settings</button>
+    </nav>
   </main>
 </body>
 </html>
