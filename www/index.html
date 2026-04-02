@@ -29,7 +29,7 @@
     </section>
 
     <section id="authScreen" class="screen">
-      <div class="auth-card panel">
+      <div id="authCard" class="auth-card panel">
         <h2>Face Authentication</h2>
         <p id="authStatus">Starting camera scan...</p>
         <div class="camera-frame">
@@ -43,12 +43,12 @@
 
       <div id="pinPanel" class="pin-card panel hidden">
         <h3>Enter Security PIN</h3>
-        <p>Default PIN: 2468</p>
         <div id="pinDots" class="pin-dots" aria-label="PIN input">
           <span></span><span></span><span></span><span></span>
         </div>
         <div id="pinPad" class="pin-pad"></div>
         <div class="pin-actions">
+          <button class="btn btn--ghost" id="pinBackBtn" type="button">Back to Face</button>
           <button class="btn btn--ghost" id="pinClearBtn" type="button">Clear</button>
           <button class="btn btn--primary" id="pinSubmitBtn" type="button">Unlock</button>
         </div>
@@ -92,6 +92,10 @@
               <h4>Spotify</h4>
               <button class="icon-btn" id="expandMusicBtn" type="button">Expand</button>
             </div>
+            <div class="app-controls-row">
+              <button class="icon-btn" id="spotifyConnectBtn" type="button">Connect</button>
+              <button class="icon-btn" id="spotifyPauseBtn" type="button">Pause</button>
+            </div>
             <p id="trackTitle">Nothing playing</p>
             <p id="trackMeta">Connect Spotify to begin</p>
             <div class="player-controls">
@@ -108,7 +112,7 @@
             </div>
             <div class="map-search-row">
               <input id="mapSearchInput" type="text" placeholder="Search destination" />
-              <button class="icon-btn" id="mapSearchBtn" type="button">Go</button>
+              <button class="icon-btn map-search-btn" id="mapSearchBtn" type="button">Route</button>
             </div>
             <div id="miniMap" class="map-box"></div>
           </article>
@@ -136,10 +140,12 @@
           <div class="app-controls-row">
             <input id="musicQueryInput" type="text" placeholder="Play a song or artist" />
             <button class="btn btn--primary" id="musicPlayQueryBtn" type="button">Play</button>
+            <button class="btn btn--ghost" id="musicConnectBtn" type="button">Connect</button>
           </div>
           <div class="player-controls large-controls">
             <button class="icon-btn" id="musicPrevBtn" type="button">Prev</button>
             <button class="icon-btn" id="musicPlayBtn" type="button">Play/Pause</button>
+            <button class="icon-btn" id="musicPauseBtn" type="button">Pause</button>
             <button class="icon-btn" id="musicNextBtn" type="button">Next</button>
           </div>
           <div class="volume-row">
@@ -158,8 +164,18 @@
         </section>
 
         <section id="appCalls" class="app-pane hidden">
-          <h4>Calls (Mock / ADB)</h4>
-          <p>Call module placeholder for Android bridge.</p>
+          <h4>Calls (ADB Dialer)</h4>
+          <p id="callsStatus">Connect an Android device with USB debugging enabled.</p>
+          <div class="app-controls-row">
+            <button class="btn btn--ghost" id="refreshDevicesBtn" type="button">Refresh Devices</button>
+            <button class="btn btn--soft" id="openDialerBtn" type="button">Open Dialer</button>
+          </div>
+          <div class="app-controls-row">
+            <input id="callNumberInput" type="text" placeholder="Enter phone number" />
+            <button class="btn btn--primary" id="dialNumberBtn" type="button">Call</button>
+            <button class="btn btn--ghost" id="endCallBtn" type="button">End Call</button>
+          </div>
+          <div id="deviceList" class="list-box"></div>
         </section>
 
         <section id="appCamera" class="app-pane hidden">
@@ -191,12 +207,27 @@
     </section>
 
     <nav class="bottom-nav">
-      <button data-nav="home" type="button">Home</button>
-      <button data-nav="voice" type="button">Voice</button>
-      <button data-nav="music" type="button">Music</button>
-      <button data-nav="maps" type="button">Maps</button>
-      <button data-nav="camera" type="button">Camera</button>
-      <button data-nav="settings" type="button">Settings</button>
+      <button data-nav="home" type="button" aria-label="Home">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5L12 3l9 7.5V21h-6v-6H9v6H3z"/></svg>
+      </button>
+      <button data-nav="voice" type="button" aria-label="Voice">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a4 4 0 0 0 4-4V6a4 4 0 0 0-8 0v5a4 4 0 0 0 4 4zm-7-4h2a5 5 0 0 0 10 0h2a7 7 0 0 1-6 6.92V21h-2v-3.08A7 7 0 0 1 5 11z"/></svg>
+      </button>
+      <button data-nav="music" type="button" aria-label="Music">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3v11.26A3.99 3.99 0 1 0 19 18V7h3V3zM5 14a4 4 0 1 0 4 4V8H5z"/></svg>
+      </button>
+      <button data-nav="maps" type="button" aria-label="Maps">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>
+      </button>
+      <button data-nav="camera" type="button" aria-label="Baby Monitoring">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4l-1.5 2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3.5L15 4zm3 14a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/></svg>
+      </button>
+      <button data-nav="emotion" type="button" aria-label="Emotion Detection">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm-4 7a1.5 1.5 0 1 1-1.5 1.5A1.5 1.5 0 0 1 8 9zm4 9a6.2 6.2 0 0 1-5.33-3h10.66A6.2 6.2 0 0 1 12 18zm4-6a1.5 1.5 0 1 1 1.5-1.5A1.5 1.5 0 0 1 16 12z"/></svg>
+      </button>
+      <button data-nav="settings" type="button" aria-label="Settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94a7.43 7.43 0 0 0 .05-.94 7.43 7.43 0 0 0-.05-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.12 7.12 0 0 0-1.63-.94l-.36-2.54A.5.5 0 0 0 13.9 2h-3.8a.5.5 0 0 0-.49.42l-.36 2.54a7.12 7.12 0 0 0-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 8.48a.5.5 0 0 0 .12.64l2.03 1.58a7.43 7.43 0 0 0-.05.94 7.43 7.43 0 0 0 .05.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .6.22l2.39-.96a7.12 7.12 0 0 0 1.63.94l.36 2.54a.5.5 0 0 0 .49.42h3.8a.5.5 0 0 0 .49-.42l.36-2.54a7.12 7.12 0 0 0 1.63-.94l2.39.96a.5.5 0 0 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64zM12 15.5A3.5 3.5 0 1 1 15.5 12 3.5 3.5 0 0 1 12 15.5z"/></svg>
+      </button>
     </nav>
   </main>
 </body>

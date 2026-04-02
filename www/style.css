@@ -401,6 +401,14 @@ button {
 .map-search-row {
   display: flex;
   gap: 8px;
+  align-items: center;
+  padding: 6px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.map-search-btn {
+  min-width: 86px;
 }
 
 input,
@@ -475,7 +483,31 @@ select {
 .app-pane {
   height: calc(100% - 60px);
   overflow: auto;
-  padding: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.list-box {
+  min-height: 120px;
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.list-box .device-row {
+  padding: 6px 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
+}
+
+.list-box .device-row:last-child {
+  border-bottom: none;
 }
 
 .large-controls .icon-btn {
@@ -490,22 +522,29 @@ select {
   height: 76px;
   border-radius: 18px;
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(7, 1fr);
   gap: 8px;
   padding: 8px;
 }
 
 .bottom-nav button {
   border-radius: 12px;
-  font-size: 0.95rem;
-  font-weight: 700;
   color: inherit;
   background: rgba(255, 255, 255, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bottom-nav button svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
 }
 
 @media (max-width: 1180px) {
   .dashboard {
-    grid-template-columns: 180px 1fr 300px;
+    grid-template-columns: 170px 1fr 320px;
   }
 }
 
@@ -522,6 +561,7 @@ select {
   .dashboard {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto auto;
+    overflow: auto;
   }
 
   .app-grid {
@@ -529,8 +569,18 @@ select {
   }
 
   .bottom-nav {
-    height: 88px;
-    grid-template-columns: repeat(3, 1fr);
+    height: 96px;
+    grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(2, 1fr);
+  }
+
+  .auth-card {
+    margin-right: 0;
+    margin-bottom: 12px;
+  }
+
+  #authScreen {
+    flex-direction: column;
+    justify-content: center;
   }
 }

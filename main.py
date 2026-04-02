@@ -5,6 +5,7 @@ import os
 import pickle
 import queue
 import random
+import re
 import subprocess
 import threading
 import time
@@ -86,6 +87,50 @@ def _http_json(url: str) -> dict[str, Any] | list[Any]:
     return json.loads(payload)
 
 
+def _adb_base_command() -> list[str]:
+    command = ["adb"]
+    device_serial = str(db.get_setting("android_device_serial", "") or "").strip()
+    if device_serial:
+        command.extend(["-s", device_serial])
+    return command
+
+
+def _run_adb(arguments: list[str]) -> dict[str, Any]:
+    try:
+        result = subprocess.run(
+            _adb_base_command() + arguments,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        output = (result.stdout or "").strip() or (result.stderr or "").strip()
+        return {
+            "ok": result.returncode == 0,
+            "returncode": result.returncode,
+            "message": output,
+            "stdout": (result.stdout or "").strip(),
+            "stderr": (result.stderr or "").strip(),
+        }
+    except Exception as exc:
+        return {"ok": False, "returncode": -1, "message": str(exc), "stdout": "", "stderr": str(exc)}
+
+
+def _list_android_devices_structured() -> list[dict[str, str]]:
+    result = _run_adb(["devices"])
+    if not result.get("ok"):
+        return []
+
+    devices: list[dict[str, str]] = []
+    for line in str(result.get("stdout", "")).splitlines():
+        row = line.strip()
+        if not row or row.lower().startswith("list of devices"):
+            continue
+        parts = row.split()
+        if len(parts) >= 2:
+            devices.append({"serial": parts[0], "status": parts[1]})
+    return devices
+
+
 def _camera_backends() -> list[int | None]:
     backends: list[int | None] = []
     for backend_name in ("CAP_DSHOW", "CAP_MSMF"):
@@ -97,10 +142,16 @@ def _camera_backends() -> list[int | None]:
 
 
 def _open_camera(camera_index: int = 0) -> cv2.VideoCapture | None:
-    indices = [camera_index]
-    if camera_index != 0:
+    # Clamp persisted settings to realistic USB camera indexes.
+    safe_index = int(camera_index) if isinstance(camera_index, int) else 0
+    if safe_index < 0 or safe_index > 1:
+        safe_index = 0
+
+    indices = [safe_index]
+    if safe_index != 0:
         indices.append(0)
-    indices.extend([1, 2])
+    # Avoid probing many invalid indexes which can produce noisy driver errors.
+    indices = list(dict.fromkeys(indices))
 
     for index in indices:
         for backend in _camera_backends():
@@ -202,6 +253,8 @@ def _auth_result_fail(message: str) -> dict[str, Any]:
 def _face_auth_worker() -> None:
     try:
         camera_index = int(float(db.get_setting("driver_monitor_camera_index", "0") or 0))
+        if camera_index < 0 or camera_index > 1:
+            camera_index = 0
         ready, message = _claim_camera("face-auth", camera_index)
         if not ready:
             _auth_result_fail(message)
@@ -328,6 +381,34 @@ def _handle_voice_command(query: str) -> str:
         openApp("emotion")
         return "Starting emotion detection"
 
+    if normalized.startswith("open camera") or normalized.startswith("open baby monitoring"):
+        openApp("camera")
+        startBabyMonitoring()
+        return "Opening baby monitoring"
+
+    if normalized.startswith("stop camera") or normalized.startswith("stop baby monitoring"):
+        stopCamera()
+        return "Stopping camera"
+
+    if normalized.startswith("call "):
+        number = "".join(ch for ch in normalized if ch.isdigit() or ch == "+")
+        if not number:
+            digits = re.findall(r"\d+", normalized)
+            number = "".join(digits)
+        if number:
+            dialNumber(number)
+            openApp("calls")
+            return f"Calling {number}"
+
+    if normalized in {"end call", "hang up", "hangup"}:
+        endCall()
+        return "Ending call"
+
+    if normalized.startswith("open dialer"):
+        openDialer()
+        openApp("calls")
+        return "Opening dialer"
+
     try:
         return allCommands(query, source="voice")
     except Exception:
@@ -337,6 +418,8 @@ def _handle_voice_command(query: str) -> str:
 def _emotion_worker() -> None:
     _emotion_running.set()
     camera_index = int(float(db.get_setting("driver_monitor_camera_index", "0") or 0))
+    if camera_index < 0 or camera_index > 1:
+        camera_index = 0
     ready, message = _claim_camera("emotion", camera_index)
     if not ready:
         _call_js("setEmotionResult", {"ok": False, "message": message})
@@ -487,6 +570,8 @@ def startBabyMonitoring() -> dict[str, Any]:
         return {"ok": False, "message": "Emotion detection is using camera. Please wait."}
 
     camera_index = int(float(db.get_setting("driver_monitor_camera_index", "0") or 0))
+    if camera_index < 0 or camera_index > 1:
+        camera_index = 0
     ready, message = _claim_camera("baby-monitor", camera_index)
     if not ready:
         return {"ok": False, "message": message}
@@ -572,6 +657,51 @@ def connectSpotify() -> dict[str, Any]:
 @eel.expose
 def getSpotifyAccessToken() -> str:
     return get_spotify_access_token()
+
+
+@eel.expose
+def getAndroidDevices() -> dict[str, Any]:
+    devices = _list_android_devices_structured()
+    if not devices:
+        return {"ok": False, "devices": [], "message": "No Android devices detected. Connect device and enable USB debugging."}
+    return {"ok": True, "devices": devices, "message": f"{len(devices)} Android device(s) ready."}
+
+
+@eel.expose
+def openDialer() -> dict[str, Any]:
+    result = _run_adb(["shell", "am", "start", "-a", "android.intent.action.DIAL"])
+    if result.get("ok"):
+        return {"ok": True, "message": "Dialer opened on Android device."}
+    return {"ok": False, "message": result.get("message") or "Unable to open Android dialer."}
+
+
+@eel.expose
+def dialNumber(number: str) -> dict[str, Any]:
+    dial_number = str(number or "").strip()
+    if not dial_number:
+        return {"ok": False, "message": "Enter a valid phone number."}
+
+    sanitized = "".join(ch for ch in dial_number if ch.isdigit() or ch == "+")
+    if not sanitized:
+        return {"ok": False, "message": "Phone number must contain digits."}
+
+    result = _run_adb(["shell", "am", "start", "-a", "android.intent.action.CALL", "-d", f"tel:{sanitized}"])
+    if result.get("ok"):
+        return {"ok": True, "message": f"Calling {sanitized} via connected Android device."}
+
+    fallback = _run_adb(["shell", "am", "start", "-a", "android.intent.action.DIAL", "-d", f"tel:{sanitized}"])
+    if fallback.get("ok"):
+        return {"ok": True, "message": f"Dialer opened with number {sanitized}."}
+
+    return {"ok": False, "message": fallback.get("message") or result.get("message") or "Unable to place call."}
+
+
+@eel.expose
+def endCall() -> dict[str, Any]:
+    result = _run_adb(["shell", "input", "keyevent", "6"])
+    if result.get("ok"):
+        return {"ok": True, "message": "Call end command sent."}
+    return {"ok": False, "message": result.get("message") or "Unable to end call."}
 
 
 @eel.expose

@@ -23,6 +23,7 @@ const state = {
   currentLocation: [13.0827, 80.2707],
   spotifyConnected: false,
   swipeStartX: 0,
+  spotifyPlaying: false,
 };
 
 function byId(id) {
@@ -39,6 +40,29 @@ function announce(message) {
 function showToast(message) {
   announce(message);
   console.log(message);
+}
+
+function setCallsStatus(text) {
+  const status = byId("callsStatus");
+  if (status) {
+    status.textContent = text || "";
+  }
+}
+
+function setDeviceList(devices) {
+  const list = byId("deviceList");
+  if (!list) {
+    return;
+  }
+
+  if (!Array.isArray(devices) || devices.length === 0) {
+    list.innerHTML = "<div class=\"device-row\">No active Android devices found.</div>";
+    return;
+  }
+
+  list.innerHTML = devices
+    .map((device) => `<div class=\"device-row\">${device.serial || "unknown"} - ${device.status || "unknown"}</div>`)
+    .join("");
 }
 
 function showScreen(screenId) {
@@ -115,6 +139,16 @@ function clearPin() {
   updatePinDots();
 }
 
+function showFaceAuthPanel() {
+  byId("authCard")?.classList.remove("hidden");
+  byId("pinPanel")?.classList.add("hidden");
+}
+
+function showPinPanel() {
+  byId("authCard")?.classList.add("hidden");
+  byId("pinPanel")?.classList.remove("hidden");
+}
+
 function openApp(appName, options = {}) {
   const { syncBackend = true, autoStartCamera = true } = options;
   const name = String(appName || "").toLowerCase();
@@ -152,6 +186,10 @@ function openApp(appName, options = {}) {
     if (emotionStatus) {
       emotionStatus.textContent = "Capture 10 camera samples and map mood to Spotify.";
     }
+  }
+
+  if (name === "maps") {
+    refreshMapSizes();
   }
 }
 
@@ -214,12 +252,12 @@ function updateCameraFrame(owner, frameDataUrl) {
 function onFaceAuthSuccess(userName) {
   setAuthStatus(`Welcome ${userName || "Driver"}. Access granted.`);
   showScreen(SCREENS.dashboard);
-  byId("pinPanel")?.classList.add("hidden");
+  showFaceAuthPanel();
 }
 
 function onFaceAuthFailed(message) {
   setAuthStatus(message || "Face not recognized. Use PIN fallback.");
-  byId("pinPanel")?.classList.remove("hidden");
+  showFaceAuthPanel();
 }
 
 function setEmotionResult(payload) {
@@ -250,6 +288,16 @@ function updateSpotifyUI(payload) {
   const meta = byId("trackMeta");
   if (title) title.textContent = track.title || "Unknown track";
   if (meta) meta.textContent = `${track.artist || "Unknown artist"} ${track.album ? `- ${track.album}` : ""}`;
+  state.spotifyPlaying = Boolean(track.is_playing);
+
+  const playButton = byId("playPauseBtn");
+  const fullPlayButton = byId("musicPlayBtn");
+  if (playButton) {
+    playButton.textContent = state.spotifyPlaying ? "Resume" : "Play";
+  }
+  if (fullPlayButton) {
+    fullPlayButton.textContent = state.spotifyPlaying ? "Resume" : "Play";
+  }
 }
 
 function setSpotifyState(payload) {
@@ -312,6 +360,38 @@ function setupMaps() {
   L.marker(state.currentLocation).addTo(state.fullMap);
 }
 
+function refreshMapSizes() {
+  window.setTimeout(() => {
+    if (state.miniMap) {
+      state.miniMap.invalidateSize();
+    }
+    if (state.fullMap) {
+      state.fullMap.invalidateSize();
+    }
+  }, 180);
+}
+
+async function runNavigation(sourceId) {
+  const place = byId(sourceId)?.value || "";
+  if (!place.trim()) {
+    setNavigationResult({ ok: false, message: "Enter a destination to navigate." });
+    return;
+  }
+  const response = await eel.navigateTo(place)();
+  setNavigationResult(response);
+}
+
+async function refreshAndroidDevices() {
+  const response = await eel.getAndroidDevices()();
+  if (response && response.ok === false) {
+    setCallsStatus(response.message || "Unable to read Android device status.");
+    setDeviceList([]);
+    return;
+  }
+  setCallsStatus(response.message || "Device list refreshed.");
+  setDeviceList(response.devices || []);
+}
+
 function bindPinPad() {
   const pad = byId("pinPad");
   if (!pad) {
@@ -340,7 +420,8 @@ function bindUI() {
       setAuthStatus(response.message);
     }
   });
-  byId("showPinBtn")?.addEventListener("click", () => byId("pinPanel")?.classList.remove("hidden"));
+  byId("showPinBtn")?.addEventListener("click", showPinPanel);
+  byId("pinBackBtn")?.addEventListener("click", showFaceAuthPanel);
   byId("pinClearBtn")?.addEventListener("click", clearPin);
 
   byId("pinSubmitBtn")?.addEventListener("click", async () => {
@@ -367,7 +448,7 @@ function bindUI() {
   byId("expandMapBtn")?.addEventListener("click", () => openApp("maps"));
 
   byId("playPauseBtn")?.addEventListener("click", async () => {
-    const result = await eel.playSpotify("")();
+    const result = state.spotifyPlaying ? await eel.pauseSpotify()() : await eel.playSpotify("")();
     updateSpotifyUI(result);
   });
   byId("prevBtn")?.addEventListener("click", async () => updateSpotifyUI(await eel.prevTrack()()));
@@ -377,7 +458,10 @@ function bindUI() {
     const query = byId("musicQueryInput")?.value || "";
     updateSpotifyUI(await eel.playSpotify(query)());
   });
-  byId("musicPlayBtn")?.addEventListener("click", async () => updateSpotifyUI(await eel.playSpotify("")()));
+  byId("musicPlayBtn")?.addEventListener("click", async () => {
+    const result = state.spotifyPlaying ? await eel.pauseSpotify()() : await eel.playSpotify("")();
+    updateSpotifyUI(result);
+  });
   byId("musicPrevBtn")?.addEventListener("click", async () => updateSpotifyUI(await eel.prevTrack()()));
   byId("musicNextBtn")?.addEventListener("click", async () => updateSpotifyUI(await eel.nextTrack()()));
 
@@ -385,17 +469,54 @@ function bindUI() {
     eel.setSpotifyVolume(event.target.value)().catch(() => undefined);
   });
 
-  const runNavigation = async (sourceId) => {
-    const place = byId(sourceId)?.value || "";
-    if (!place.trim()) {
-      return;
-    }
-    const response = await eel.navigateTo(place)();
-    setNavigationResult(response);
-  };
-
   byId("mapSearchBtn")?.addEventListener("click", () => runNavigation("mapSearchInput"));
   byId("mapFullSearchBtn")?.addEventListener("click", () => runNavigation("mapFullSearchInput"));
+  byId("mapSearchInput")?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      runNavigation("mapSearchInput");
+    }
+  });
+  byId("mapFullSearchInput")?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      runNavigation("mapFullSearchInput");
+    }
+  });
+
+  byId("spotifyConnectBtn")?.addEventListener("click", async () => {
+    const response = await eel.connectSpotify()();
+    showToast(response?.message || "Spotify response received.");
+    await refreshSpotifyState();
+  });
+  byId("musicConnectBtn")?.addEventListener("click", async () => {
+    const response = await eel.connectSpotify()();
+    showToast(response?.message || "Spotify response received.");
+    await refreshSpotifyState();
+  });
+  byId("spotifyPauseBtn")?.addEventListener("click", async () => {
+    const response = await eel.pauseSpotify()();
+    showToast(response?.message || "Spotify paused.");
+    updateSpotifyUI(response);
+  });
+  byId("musicPauseBtn")?.addEventListener("click", async () => {
+    const response = await eel.pauseSpotify()();
+    showToast(response?.message || "Spotify paused.");
+    updateSpotifyUI(response);
+  });
+
+  byId("refreshDevicesBtn")?.addEventListener("click", refreshAndroidDevices);
+  byId("openDialerBtn")?.addEventListener("click", async () => {
+    const response = await eel.openDialer()();
+    setCallsStatus(response?.message || "Dialer response received.");
+  });
+  byId("dialNumberBtn")?.addEventListener("click", async () => {
+    const number = byId("callNumberInput")?.value || "";
+    const response = await eel.dialNumber(number)();
+    setCallsStatus(response?.message || "Call response received.");
+  });
+  byId("endCallBtn")?.addEventListener("click", async () => {
+    const response = await eel.endCall()();
+    setCallsStatus(response?.message || "End call response received.");
+  });
 
   byId("startBabyBtn")?.addEventListener("click", async () => {
     const response = await eel.startBabyMonitoring()();
@@ -438,6 +559,9 @@ function bindUI() {
       }
       if (APP_NAMES.includes(nav || "")) {
         openApp(nav);
+        if (nav === "maps") {
+          refreshMapSizes();
+        }
       }
     });
   });
@@ -477,6 +601,8 @@ async function startupSequence() {
   if (response && response.ok === false && response.message) {
     setAuthStatus(response.message);
   }
+  await refreshAndroidDevices();
+  refreshMapSizes();
 }
 
 async function refreshSpotifyState() {
@@ -507,6 +633,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   setupMaps();
   registerEelCallbacks();
   await startupSequence();
+  await refreshSpotifyState();
   window.setInterval(updateVehicleSimulation, 1000);
   window.setInterval(refreshSpotifyState, 6000);
 });
