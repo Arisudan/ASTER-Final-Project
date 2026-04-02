@@ -556,18 +556,29 @@ function setBabyMonitorState(payload) {
   const wakeBadge = byId("wakeBadge");
   const moveBadge = byId("moveBadge");
   const outsideBadge = byId("outsideBadge");
+  const wakeBadgeValue = byId("wakeBadgeValue");
+  const moveBadgeValue = byId("moveBadgeValue");
+  const outsideBadgeValue = byId("outsideBadgeValue");
 
   if (wakeBadge) {
-    wakeBadge.textContent = `Wake: ${payload.wake_up ? "YES" : "NO"}`;
     wakeBadge.classList.toggle("monitor-badge--active", Boolean(payload.wake_up));
   }
+  if (wakeBadgeValue) {
+    wakeBadgeValue.textContent = payload.wake_up ? "YES" : "NO";
+  }
+
   if (moveBadge) {
-    moveBadge.textContent = `Movement: ${payload.moving ? "YES" : "NO"}`;
     moveBadge.classList.toggle("monitor-badge--active", Boolean(payload.moving));
   }
+  if (moveBadgeValue) {
+    moveBadgeValue.textContent = payload.moving ? "YES" : "NO";
+  }
+
   if (outsideBadge) {
-    outsideBadge.textContent = `Region: ${payload.outside ? "OUTSIDE" : "INSIDE"}`;
     outsideBadge.classList.toggle("monitor-badge--alert", Boolean(payload.outside));
+  }
+  if (outsideBadgeValue) {
+    outsideBadgeValue.textContent = payload.outside ? "OUTSIDE" : "INSIDE";
   }
 }
 
@@ -1541,6 +1552,7 @@ function updateAutomotiveDashboard() {
   if (batteryEl) {
     batteryEl.textContent = batteryVoltage.toFixed(1) + "V";
   }
+}
 
 window.addEventListener("DOMContentLoaded", async () => {
   bindPinPad();
