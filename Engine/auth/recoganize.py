@@ -33,6 +33,34 @@ LEGACY_LABELS_PATH = LEGACY_TRAINER_DIR / "labels.json"
 LEGACY_FACE_AUTH_ENV = "ENABLE_LEGACY_FACE_PIPELINE"
 
 
+def _camera_backends():
+    backends = []
+    for backend_name in ("CAP_DSHOW", "CAP_MSMF"):
+        backend = getattr(cv2, backend_name, None)
+        if backend is not None:
+            backends.append(backend)
+    backends.append(None)
+    return backends
+
+
+def _open_camera(indices=(0, 1), width=1280, height=720):
+    """Try multiple camera backends/indexes to improve startup reliability on Windows."""
+    for index in indices:
+        for backend in _camera_backends():
+            capture = cv2.VideoCapture(index, backend) if backend is not None else cv2.VideoCapture(index)
+            if capture is not None and capture.isOpened():
+                try:
+                    capture.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+                    capture.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+                    capture.set(cv2.CAP_PROP_FPS, 30)
+                except Exception:
+                    pass
+                return capture
+            if capture is not None:
+                capture.release()
+    return None
+
+
 def _load_db_profiles():
     profiles = []
     for name, encoding_blob in db.fetch_face_profiles():
@@ -111,8 +139,8 @@ def _legacy_capture_samples(profile_name: str, sample_count: int = 25, timeout_s
     if detector is None:
         return 0
 
-    capture = cv2.VideoCapture(0, cv2.CAP_DSHOW) if hasattr(cv2, "CAP_DSHOW") else cv2.VideoCapture(0)
-    if not capture.isOpened():
+    capture = _open_camera()
+    if capture is None or not capture.isOpened():
         return 0
 
     LEGACY_SAMPLES_DIR.mkdir(parents=True, exist_ok=True)
@@ -211,8 +239,8 @@ def _legacy_authenticate(timeout_seconds: int = 30):
     recognizer = cv2.face.LBPHFaceRecognizer_create()
     recognizer.read(str(LEGACY_TRAINER_PATH))
 
-    capture = cv2.VideoCapture(0, cv2.CAP_DSHOW) if hasattr(cv2, "CAP_DSHOW") else cv2.VideoCapture(0)
-    if not capture.isOpened():
+    capture = _open_camera()
+    if capture is None or not capture.isOpened():
         return 0
 
     start_time = time.time()
@@ -340,8 +368,8 @@ def _capture_face_encoding(window_title, instruction_text, timeout_seconds=45):
         if cascade is None:
             return None
 
-        capture = cv2.VideoCapture(0)
-        if not capture.isOpened():
+        capture = _open_camera()
+        if capture is None or not capture.isOpened():
             return None
 
         start_time = time.time()
@@ -376,8 +404,8 @@ def _capture_face_encoding(window_title, instruction_text, timeout_seconds=45):
 
         return None
 
-    capture = cv2.VideoCapture(0)
-    if not capture.isOpened():
+    capture = _open_camera()
+    if capture is None or not capture.isOpened():
         return None
 
     start_time = time.time()
@@ -485,9 +513,13 @@ def AuthenticateFace():
     known_names = [item[0] for item in known_profiles]
     known_encodings = [item[1] for item in known_profiles]
 
-    capture = cv2.VideoCapture(0)
-    if not capture.isOpened():
+    capture = _open_camera()
+    if capture is None or not capture.isOpened():
         print("Unable to open camera.")
+        try:
+            eel.updateAuthStatus("Camera not available. Check permissions or close other camera apps.")
+        except Exception:
+            pass
         return 0
 
     start_time = time.time()

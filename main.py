@@ -383,7 +383,7 @@ def setSpotifyRepeat(mode):
 def init():
     global _current_user
     try:
-        subprocess.call([r"device.bat"], cwd=str(BASE_DIR))
+        subprocess.Popen([r"device.bat"], cwd=str(BASE_DIR), shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except Exception as exc:
         db.log_event("warning", f"ADB bootstrap failed: {exc}", source="bootstrap")
 

@@ -20,12 +20,10 @@
 <body data-mode="ambient">
   <main class="app-shell">
     <div id="liveRegion" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
-    <section id="loader" class="screen screen--active screen--ambient">
-      <div class="glass-card loader-card startup-shell" data-aos="fade-up">
-        <div class="startup-header">
-          <div class="startup-brand">
-            
-<svg class="brand-badge brand-badge--ambient aster-prism" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    ﻿    <section id="loader" class="screen screen--active screen--ambient">
+      <div class="glass-card loader-card" id="simple-loader" data-aos="fade-up" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 60px 40px; width: min(500px, 90vw);">
+
+<svg class="brand-badge brand-badge--ambient aster-prism" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 80px; height: 80px; margin-bottom: 24px;">
   <path d="M50 5 L10 85 L90 85 Z" fill="url(#silver-outer)" />
   <path d="M50 5 L10 85 L30 85 L50 45 Z" fill="#E5E5E5" />
   <path d="M50 5 L30 85 L50 55 Z" fill="#B0B0B0" />
@@ -51,56 +49,17 @@
   </defs>
 </svg>
 
-            <div>
-              <p class="eyebrow">Automotive Control System</p>
-              <h1>ASTER</h1>
-            </div>
-          </div>
-          <div class="startup-chip">Secure Boot</div>
+        <h1 style="font-family: 'Montserrat', sans-serif; font-size: 1.8rem; margin: 0 0 10px 0;">Booting ASTER</h1>
+        <p style="color: var(--driving-muted); margin: 0 0 30px 0;">Initializing authentication and services...</p>
+        
+        <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; position: relative;">
+            <div style="position: absolute; top: 0; left: 0; height: 100%; width: 40%; background: var(--driving-accent); animation: slide 1.5s infinite ease-in-out; border-radius: 10px;"></div>
         </div>
-
-        <div class="startup-grid">
-          <section class="startup-panel startup-panel--primary">
-            <p class="eyebrow">Infotainment Core</p>
-            <h2>Guarded Startup Sequence</h2>
-            <p class="lead">Initializing cockpit voice, driver authentication, navigation, and playback control.</p>
-
-            <div class="startup-metrics">
-              <div class="startup-metric"><span>Face Auth</span><strong>Ready</strong></div>
-              <div class="startup-metric"><span>Voice Stack</span><strong>Armed</strong></div>
-              <div class="startup-metric"><span>Drive UI</span><strong>Stable</strong></div>
-              <div class="startup-metric"><span>Spotify</span><strong>Linking</strong></div>
-            </div>
-
-            <div class="startup-checklist">
-              <div><span class="startup-dot"></span><strong>Camera handshake</strong><small>Calibrating driver access</small></div>
-              <div><span class="startup-dot"></span><strong>Voice engine</strong><small>Loading command profile</small></div>
-              <div><span class="startup-dot"></span><strong>Vehicle display</strong><small>Preparing cockpit surfaces</small></div>
-            </div>
-          </section>
-
-          <aside class="startup-panel startup-panel--secondary">
-            <div class="startup-radar">
-              <div class="startup-radar__ring startup-radar__ring--outer"></div>
-              <div class="startup-radar__ring startup-radar__ring--mid"></div>
-              <div class="startup-radar__ring startup-radar__ring--inner"></div>
-              <div class="startup-radar__core"></div>
-              <div class="startup-radar__scan"></div>
-            </div>
-
-            <div class="startup-status-rail">
-              <div class="startup-status"><span>IGN</span><strong>ON</strong></div>
-              <div class="startup-status"><span>HMI</span><strong>Locked</strong></div>
-              <div class="startup-status"><span>SYS</span><strong>Live</strong></div>
-            </div>
-          </aside>
-        </div>
-
-        <div class="loader-track"><span></span></div>
       </div>
     </section>
 
-    <section id="face-auth" class="screen screen--hidden screen--ambient">
+
+<section id="face-auth" class="screen screen--hidden screen--ambient">
       <div class="auth-panel glass-card" data-aos="zoom-in">
         <img class="auth-art" src="assets/face-scan.svg" alt="Face scan" />
         <div class="scan-orb">
