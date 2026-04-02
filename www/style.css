@@ -94,7 +94,11 @@ button {
   display: none;
   align-items: center;
   justify-content: center;
-  padding: 22px;
+  padding: clamp(8px, 1.2vw, 22px);
+}
+
+#dashboardScreen {
+  padding-bottom: clamp(96px, 12vh, 120px);
 }
 
 .screen--active {
@@ -178,12 +182,17 @@ button {
 .startup-logo-wrap {
   text-align: center;
   animation: startupSequence 2.4s ease forwards;
+  width: min(720px, 92vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
 }
 
 .startup-logo {
-  margin: 0 auto 22px;
-  width: 150px;
-  height: 150px;
+  margin: 0;
+  width: clamp(148px, 22vw, 220px);
+  height: clamp(148px, 22vw, 220px);
   position: relative;
   transform: scale(0.85);
 }
@@ -201,6 +210,40 @@ button {
 .logo-triangle--inner {
   inset: 26%;
   background: linear-gradient(145deg, #fdeab0 0%, #d4af37 58%, #9f7c16 100%);
+}
+
+.startup-wordmark {
+  margin: 0;
+  font-family: "Montserrat", sans-serif;
+  font-size: clamp(3rem, 11vw, 7.8rem);
+  font-weight: 800;
+  letter-spacing: clamp(0.12em, 0.9vw, 0.22em);
+  color: #c0c0c0;
+  text-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.18),
+    0 20px 40px rgba(6, 12, 26, 0.9);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.startup-tagline {
+  margin: 0;
+  color: #c0c0c0;
+  font-family: "IBM Plex Sans", sans-serif;
+  font-size: clamp(0.78rem, 1.35vw, 1.05rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.86;
+}
+
+.startup-sheen {
+  position: absolute;
+  inset: -22% -45% auto;
+  height: 44%;
+  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.46) 49%, transparent 68%);
+  transform: rotate(-12deg) translateX(-130%);
+  animation: startupSheen 2.6s ease-out 0.35s both;
+  pointer-events: none;
 }
 
 .glow-pulse {
@@ -229,6 +272,20 @@ button {
   }
   50% {
     filter: drop-shadow(0 0 22px rgba(212, 175, 55, 0.62));
+  }
+}
+
+@keyframes startupSheen {
+  0% {
+    transform: rotate(-12deg) translateX(-130%);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(-12deg) translateX(135%);
+    opacity: 0;
   }
 }
 
@@ -1459,9 +1516,9 @@ select {
 
 /* Launcher-style dashboard matching automotive reference */
 .launcher-shell {
-  width: min(1360px, 98vw);
-  height: calc(100vh - 122px);
-  padding: 18px 22px;
+  width: 100%;
+  height: 100%;
+  padding: clamp(10px, 1.4vw, 20px);
   position: relative;
   background:
     radial-gradient(circle at 12% 26%, rgba(170, 132, 68, 0.22), transparent 32%),
@@ -1469,7 +1526,7 @@ select {
     linear-gradient(180deg, #0d0f13 0%, #090b10 72%, #06070b 100%);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   overflow: hidden;
 }
 
@@ -1503,17 +1560,13 @@ select {
 }
 
 .launcher-title {
-  color: #d7dde9;
-  font-size: 0.9rem;
-  letter-spacing: 0.02em;
-  opacity: 0.9;
-  position: relative;
-  z-index: 1;
+  display: none;
 }
 
 .tablet-frame {
   position: relative;
   flex: 1;
+  min-height: 0;
   border-radius: 20px;
   border: 2px solid rgba(214, 223, 255, 0.3);
   background:
@@ -1522,13 +1575,17 @@ select {
   overflow: hidden;
   box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.45);
   z-index: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .tablet-topbar {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 18px 22px 8px;
+  padding: clamp(10px, 1.6vw, 18px) clamp(12px, 1.8vw, 22px) 8px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .tablet-date-wrap {
@@ -1539,7 +1596,7 @@ select {
 
 .tablet-date-number {
   font-family: "Montserrat", sans-serif;
-  font-size: 2.1rem;
+  font-size: clamp(1.25rem, 2.8vw, 2.1rem);
   line-height: 1;
   font-weight: 800;
   color: #f4f7ff;
@@ -1547,7 +1604,7 @@ select {
 
 .tablet-date-month {
   font-family: "Montserrat", sans-serif;
-  font-size: 2rem;
+  font-size: clamp(1.15rem, 2.5vw, 2rem);
   line-height: 1;
   font-weight: 700;
   color: #f4f7ff;
@@ -1556,22 +1613,24 @@ select {
 .tablet-date-weekday {
   margin-top: 4px;
   color: #c8d3eb;
-  font-size: 1.2rem;
+  font-size: clamp(0.86rem, 1.5vw, 1.2rem);
   font-style: italic;
 }
 
 .tablet-time {
   font-family: "Montserrat", sans-serif;
-  font-size: 2rem;
+  font-size: clamp(1.15rem, 2.5vw, 2rem);
   color: #f4f7ff;
 }
 
 .tablet-stage {
-  height: calc(100% - 156px);
+  flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-columns: 130px 1fr 170px;
+  grid-template-columns: minmax(70px, 130px) 1fr minmax(96px, 170px);
   align-items: center;
-  padding: 0 24px;
+  padding: 0 clamp(10px, 1.8vw, 24px);
+  gap: clamp(10px, 1.2vw, 18px);
 }
 
 .tablet-left-icons,
@@ -1646,8 +1705,8 @@ select {
 }
 
 .speed-ring {
-  width: 240px;
-  height: 240px;
+  width: clamp(136px, 22vw, 240px);
+  height: clamp(136px, 22vw, 240px);
   border-radius: 50%;
   border: 2px solid rgba(244, 247, 255, 0.12);
   box-shadow: inset 0 0 24px rgba(244, 247, 255, 0.04);
@@ -1659,7 +1718,7 @@ select {
 
 .speed-value {
   font-family: "Montserrat", sans-serif;
-  font-size: 5rem;
+  font-size: clamp(2.2rem, 7vw, 5rem);
   line-height: 1;
   color: #f4f7ff;
   font-weight: 700;
@@ -1669,12 +1728,12 @@ select {
   margin-top: 6px;
   letter-spacing: 0.12em;
   color: #e4ebff;
-  font-size: 1.35rem;
+  font-size: clamp(0.72rem, 2vw, 1.35rem);
 }
 
 .car-tile {
-  width: 130px;
-  height: 130px;
+  width: clamp(76px, 12vw, 130px);
+  height: clamp(76px, 12vw, 130px);
   border: none;
   border-radius: 14px;
   background: linear-gradient(145deg, #6ef0c4 0%, #2fd3c5 100%);
@@ -1703,7 +1762,7 @@ select {
 }
 
 .car-tile-label {
-  font-size: 1.65rem;
+  font-size: clamp(1rem, 2vw, 1.65rem);
   letter-spacing: 0.03em;
 }
 
@@ -1755,12 +1814,12 @@ select {
 
 @media (max-width: 1100px) {
   .launcher-shell {
-    padding: 12px;
+    padding: 10px;
   }
 
   .tablet-stage {
-    grid-template-columns: 92px 1fr 120px;
-    padding: 0 12px;
+    grid-template-columns: 82px 1fr 104px;
+    padding: 0 10px;
   }
 
   .speed-ring {
@@ -1788,6 +1847,27 @@ select {
     width: 92px;
     height: 92px;
     font-size: 1.3rem;
+  }
+}
+
+@media (max-width: 760px) {
+  .tablet-stage {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    justify-items: center;
+    padding: 8px 8px 14px;
+  }
+
+  .tablet-left-icons,
+  .tablet-right-icons {
+    flex-direction: row;
+    width: 100%;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .startup-wordmark {
+    letter-spacing: 0.14em;
   }
 }
 
