@@ -22,6 +22,13 @@ SPOTIFY_SCOPE = " ".join(
         "user-modify-playback-state",
         "user-read-currently-playing",
         "user-read-private",
+        "user-read-email",
+        "user-library-read",
+        "user-library-modify",
+        "playlist-read-private",
+        "playlist-read-collaborative",
+        "playlist-modify-public",
+        "playlist-modify-private",
         "app-remote-control",
     ]
 )
@@ -373,9 +380,15 @@ def set_volume(level: int | str) -> dict[str, Any]:
         device, device_message = _ensure_playback_device(client)
         if device is None:
             return {"ok": False, "message": device_message}
-        client.volume(volume, device_id=device.get("id"))
-        db.log_event("info", f"Spotify volume set to {volume}%.", source="spotify")
-        return {"ok": True, "message": f"Volume set to {volume}.", "state": get_player_state()}
+        
+        try:
+            client.volume(volume, device_id=device.get("id"))
+            db.log_event("info", f"Spotify volume set to {volume}%.", source="spotify")
+            return {"ok": True, "message": f"Volume set to {volume}.", "state": get_player_state()}
+        except Exception as vol_exc:
+            # Volume control may not be supported on all devices (web player)
+            db.log_event("warning", f"Volume control not available: {vol_exc}", source="spotify")
+            return {"ok": False, "message": "Volume control not supported on this device. Try using a native Spotify client.", "state": get_player_state()}
     except Exception as exc:
         return {"ok": False, "message": f"Unable to set volume: {exc}"}
 
