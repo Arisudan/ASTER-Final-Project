@@ -522,7 +522,7 @@ function setEmotionResult(payload) {
   if (sampleChip) sampleChip.textContent = `Samples: ${sampleCount}/${sampleTarget || "?"}`;
   if (detail) {
     const autoplayText = payload.stage === "done"
-      ? (payload.spotify?.ok ? `Spotify started with ${payload.query}.` : payload.spotify?.message || "Spotify autoplay skipped.")
+      ? (payload.message || payload.spotify?.message || "Emotion analysis completed.")
       : `Live emotion: ${emotionLabel}.`;
     detail.textContent = autoplayText;
   }

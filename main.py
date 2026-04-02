@@ -697,20 +697,28 @@ def _emotion_worker() -> None:
         emotion_keywords = _emotion_keywords_for_label(final_label)
         play_result: dict[str, Any] | None = None
         
-        if autoplay_enabled and final_confidence >= confidence_threshold:
-            # Try emotion-based playlist first
-            if emotion_keywords:
+        if autoplay_enabled:
+            # Keep Spotify wiring active even when confidence is low by falling back to a safe mix.
+            playback_query = query if final_confidence >= confidence_threshold else _emotion_query_for_label("neutral")
+
+            # Try emotion-based playlist first only when confidence is high enough.
+            if emotion_keywords and final_confidence >= confidence_threshold:
                 play_result = spotify_play_emotion_playlist(final_label, emotion_keywords)
-            
-            # Fallback to generic query search if playlist selection failed or returned no match
+
+            # Fallback to query-based playback whenever playlist mapping is unavailable.
             if not play_result or not play_result.get("ok"):
-                play_result = spotify_play_music(query)
+                play_result = spotify_play_music(playback_query)
 
         if play_result and play_result.get("ok"):
             track_name = play_result.get("track_name") or "music"
             playlist_name = play_result.get("playlist_name") or ""
             if playlist_name:
                 message = f"Detected {final_label}. Playing '{track_name}' from '{playlist_name}'."
+            elif final_confidence < confidence_threshold:
+                message = (
+                    f"Detected {final_label} with low confidence ({final_confidence:.0%}). "
+                    "Playing neutral daily mix on Spotify."
+                )
             else:
                 message = f"Detected {final_label}. Playing {query}."
         elif autoplay_enabled:
