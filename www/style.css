@@ -599,6 +599,8 @@ select {
   grid-template-columns: repeat(auto-fit, minmax(clamp(140px, 20vw, 180px), 1fr));
   gap: clamp(10px, 1.2vw, 12px);
   overflow-y: auto;
+  padding-bottom: clamp(100px, 12vw, 140px);
+  padding-right: 8px;
 }
 
 .app-card {
@@ -823,10 +825,10 @@ select {
 }
 
 .bottom-nav {
-  position: absolute;
-  left: 14px;
-  right: 14px;
-  bottom: 10px;
+  position: fixed;
+  left: clamp(10px, 1.4vw, 14px);
+  right: clamp(10px, 1.4vw, 14px);
+  bottom: clamp(10px, 1.2vw, 16px);
   height: 76px;
   border-radius: 18px;
   display: grid;
@@ -834,6 +836,10 @@ select {
   gap: 8px;
   padding: 8px;
   transition: opacity 0.3s ease, visibility 0.3s ease;
+  background: rgba(20, 20, 20, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  z-index: 50;
 }
 
 .bottom-nav.hidden {
@@ -883,6 +889,7 @@ select {
 
   .app-grid {
     grid-template-columns: repeat(auto-fit, minmax(clamp(120px, 18vw, 150px), 1fr));
+    padding-bottom: clamp(120px, 14vw, 160px);
   }
 
   .bottom-nav {
