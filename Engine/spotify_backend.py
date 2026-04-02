@@ -294,6 +294,36 @@ def play_music(query: str | None = None) -> dict[str, Any]:
         return {"ok": False, "message": f"Unable to play music: {exc}"}
 
 
+def play_uri(uri: str) -> dict[str, Any]:
+    client = _get_client()
+    if client is None:
+        return {"ok": False, "message": "Spotify is not configured."}
+
+    target_uri = str(uri or "").strip()
+    if not target_uri:
+        return {"ok": False, "message": "Spotify URI is empty."}
+
+    try:
+        device, device_message = _ensure_playback_device(client)
+        if device is None:
+            return {"ok": False, "message": device_message}
+
+        device_id = device.get("id")
+        if target_uri.startswith("spotify:track:"):
+            client.start_playback(device_id=device_id, uris=[target_uri])
+            message = "Playing selected track."
+        elif target_uri.startswith("spotify:playlist:") or target_uri.startswith("spotify:album:"):
+            client.start_playback(device_id=device_id, context_uri=target_uri)
+            message = "Playing selected collection."
+        else:
+            return {"ok": False, "message": "Unsupported Spotify URI format."}
+
+        db.log_event("info", f"Spotify play via URI: {target_uri}", source="spotify")
+        return {"ok": True, "message": message, "state": get_player_state()}
+    except Exception as exc:
+        return {"ok": False, "message": f"Unable to play Spotify URI: {exc}"}
+
+
 def pause_music() -> dict[str, Any]:
     client = _get_client()
     if client is None:
@@ -382,6 +412,115 @@ def search_and_play(query: str) -> dict[str, Any]:
     return play_music(query)
 
 
+def _get_playlist_tracks(client: spotipy.Spotify, playlist_id: str, limit: int = 50) -> list[dict[str, Any]]:
+    """Fetch tracks from a specific playlist."""
+    try:
+        results = client.playlist_tracks(playlist_id, limit=limit)
+        tracks = []
+        for item in results.get("items", []):
+            track = item.get("track", {})
+            if track and track.get("uri"):
+                tracks.append({
+                    "name": track.get("name", "Unknown"),
+                    "artist": ", ".join(a.get("name", "Unknown") for a in track.get("artists", [])),
+                    "uri": track.get("uri", ""),
+                    "id": track.get("id", ""),
+                })
+        return tracks
+    except Exception:
+        return []
+
+
+def _match_emotion_to_playlists(playlists: list[dict[str, Any]], emotion_keywords: list[str]) -> list[dict[str, Any]]:
+    """Filter playlists by matching emotion keywords in name and description."""
+    matched = []
+    emotion_keywords_lower = [kw.lower() for kw in emotion_keywords]
+    
+    for playlist in playlists:
+        name = str(playlist.get("name", "")).lower()
+        description = str(playlist.get("description", "")).lower()
+        combined_text = f"{name} {description}"
+        
+        if any(keyword in combined_text for keyword in emotion_keywords_lower):
+            matched.append(playlist)
+    
+    return matched
+
+
+def play_emotion_based_playlist(emotion_label: str, emotion_keywords: list[str]) -> dict[str, Any]:
+    """
+    Play a random track from user's playlists matching the detected emotion.
+    Falls back to generic search if no matching playlists found.
+    """
+    import random
+    
+    client = _get_client()
+    if client is None:
+        return {"ok": False, "message": "Spotify is not configured."}
+
+    try:
+        device, device_message = _ensure_playback_device(client)
+        if device is None:
+            return {"ok": False, "message": device_message}
+
+        device_id = device.get("id")
+        
+        # Fetch user playlists
+        playlists_result = get_user_playlists(limit=50)
+        playlists = playlists_result.get("playlists", [])
+        
+        if not playlists:
+            return {"ok": False, "message": f"No playlists found. Cannot play {emotion_label} music."}
+        
+        # Match playlists to emotion
+        matched_playlists = _match_emotion_to_playlists(playlists, emotion_keywords)
+        
+        if not matched_playlists:
+            # Fallback: if no keyword-matching playlists, suggest using all playlists or search
+            return {
+                "ok": False,
+                "message": f"No {emotion_label} playlists found. Try creating a playlist with '{emotion_keywords[0]}' in the name.",
+                "fallback": True,
+            }
+        
+        # Select a random playlist from matched
+        selected_playlist = random.choice(matched_playlists)
+        playlist_id = selected_playlist.get("id")
+        playlist_name = selected_playlist.get("name", "Unknown Playlist")
+        
+        # Get tracks from selected playlist
+        tracks = _get_playlist_tracks(client, playlist_id, limit=30)
+        
+        if not tracks:
+            return {
+                "ok": False,
+                "message": f"Playlist '{playlist_name}' has no playable tracks.",
+            }
+        
+        # Select a random track
+        selected_track = random.choice(tracks)
+        track_uri = selected_track.get("uri")
+        track_name = selected_track.get("name", "Unknown Track")
+        artist_name = selected_track.get("artist", "Unknown Artist")
+        
+        # Play the track
+        client.start_playback(device_id=device_id, uris=[track_uri])
+        
+        message = f"Playing '{track_name}' by {artist_name} from '{playlist_name}' playlist."
+        db.log_event("info", message, source="spotify")
+        
+        return {
+            "ok": True,
+            "message": message,
+            "playlist_name": playlist_name,
+            "track_name": track_name,
+            "artist_name": artist_name,
+            "state": get_player_state(),
+        }
+    except Exception as exc:
+        return {"ok": False, "message": f"Unable to play emotion-based music: {exc}"}
+
+
 def get_user_profile() -> dict[str, Any]:
     """Fetch and return current Spotify user profile information."""
     client = _get_client()
@@ -423,6 +562,7 @@ def get_user_playlists(limit: int = 20) -> dict[str, Any]:
                 "description": item.get("description", ""),
                 "tracks_total": item.get("tracks", {}).get("total", 0),
                 "image": item.get("images", [{}])[0].get("url", "") if item.get("images") else "",
+                "uri": item.get("uri", ""),
                 "external_urls": item.get("external_urls", {}),
             })
         return {"connected": True, "message": f"Loaded {len(playlists)} playlists.", "playlists": playlists}

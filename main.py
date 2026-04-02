@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import base64
+from collections import Counter, deque
 import os
 import pickle
 import queue
-import random
 import re
 import subprocess
 import threading
@@ -19,6 +19,7 @@ import eel
 import numpy as np
 
 from Engine import db
+from Engine.baby_monitor_dl import BabyMonitorDL
 from Engine.Features import playAssistantSound, speak, start_audio_system, takecommand
 from Engine.auth import recoganize
 from Engine.command import allCommands
@@ -33,7 +34,9 @@ from Engine.spotify_backend import (
     get_user_saved_tracks as get_spotify_user_saved_tracks,
     next_track as spotify_next_track,
     pause_music as spotify_pause_music,
+    play_uri as spotify_play_uri,
     play_music as spotify_play_music,
+    play_emotion_based_playlist as spotify_play_emotion_playlist,
     previous_track as spotify_previous_track,
     set_volume as spotify_set_volume,
 )
@@ -65,6 +68,58 @@ _camera_owner: str | None = None
 _camera_stop_event = threading.Event()
 _baby_monitor_running = threading.Event()
 _emotion_running = threading.Event()
+_baby_monitor_dl = BabyMonitorDL(db.get_all_settings())
+_baby_last_state = {
+    "wake_up": False,
+    "moving": False,
+    "outside": False,
+    "ear": 0.0,
+    "motion_score": 0.0,
+    "message": "Baby monitor idle.",
+}
+
+# Environment controls state
+_lights_state = {
+    "on": False,
+    "brightness": 0,
+}
+
+_climate_state = {
+    "temperature": 22,
+}
+
+_voice_messages = []
+
+_EMOTION_FALLBACK_MAPPINGS = {
+    "happy": {
+        "query": "upbeat feel good hits",
+        "keywords": ["happy", "upbeat", "feel good", "cheerful", "joy", "positive", "dance", "party"],
+    },
+    "sad": {
+        "query": "calm lo-fi chill",
+        "keywords": ["sad", "melancholy", "blues", "lo-fi", "chill", "emotional", "ballad"],
+    },
+    "angry": {
+        "query": "relaxing ambient piano",
+        "keywords": ["calm", "relax", "ambient", "peaceful", "soothe", "meditation"],
+    },
+    "fear": {
+        "query": "soothing instrumental",
+        "keywords": ["soothe", "calm", "relax", "instrumental", "peaceful", "serene"],
+    },
+    "surprise": {
+        "query": "fresh pop discoveries",
+        "keywords": ["fresh", "new", "discovery", "pop", "trending", "hits"],
+    },
+    "disgust": {
+        "query": "calm focus music",
+        "keywords": ["calm", "focus", "concentrate", "study", "work", "ambient"],
+    },
+    "neutral": {
+        "query": "daily mix",
+        "keywords": ["favorite", "liked", "saved", "daily", "usual"],
+    },
+}
 
 
 
@@ -74,6 +129,57 @@ def _call_js(function_name: str, *args) -> None:
         getattr(eel, function_name)(*args)
     except Exception:
         return
+
+
+def _read_int_setting(key: str, default: int, minimum: int, maximum: int) -> int:
+    try:
+        value = int(float(db.get_setting(key, str(default)) or default))
+    except Exception:
+        value = default
+    return max(minimum, min(maximum, value))
+
+
+def _read_float_setting(key: str, default: float, minimum: float, maximum: float) -> float:
+    try:
+        value = float(db.get_setting(key, str(default)) or default)
+    except Exception:
+        value = default
+    return max(minimum, min(maximum, value))
+
+
+def _emotion_query_for_label(label: str) -> str:
+    emotion_data = _EMOTION_FALLBACK_MAPPINGS.get(str(label or "").strip().lower(), {})
+    if isinstance(emotion_data, dict):
+        return emotion_data.get("query", "daily mix")
+    return str(emotion_data or "daily mix")
+
+
+def _emotion_keywords_for_label(label: str) -> list[str]:
+    emotion_data = _EMOTION_FALLBACK_MAPPINGS.get(str(label or "").strip().lower(), {})
+    if isinstance(emotion_data, dict):
+        return emotion_data.get("keywords", [])
+    return []
+
+
+def _emotion_confidence_from_analysis(analysis: dict[str, Any] | None) -> tuple[str, float]:
+    if not analysis:
+        return "neutral", 0.0
+
+    emotion_map = analysis.get("emotion") if isinstance(analysis, dict) else None
+    if not isinstance(emotion_map, dict) or not emotion_map:
+        dominant = str(analysis.get("dominant_emotion", "neutral")).lower()
+        return dominant, 0.0
+
+    dominant, score = max(emotion_map.items(), key=lambda item: float(item[1] or 0.0))
+    total = sum(max(0.0, float(value or 0.0)) for value in emotion_map.values())
+    confidence = float(score or 0.0) / total if total > 0 else 0.0
+    return str(dominant or "neutral").lower(), confidence
+
+
+
+def _setting_bool(key: str, default: bool = False) -> bool:
+    value = str(db.get_setting(key, "true" if default else "false") or "").strip().lower()
+    return value in {"1", "true", "yes", "on"}
 
 
 def _http_json(url: str) -> dict[str, Any] | list[Any]:
@@ -232,11 +338,63 @@ def _load_known_face_profiles() -> tuple[list[str], list[np.ndarray]]:
     return names, encodings
 
 
+def _load_haar_cascade() -> cv2.CascadeClassifier | None:
+    local_path = BASE_DIR / "Engine" / "auth" / "haarcascade_frontalface_default.xml"
+    candidate_paths = [local_path, Path(cv2.data.haarcascades) / "haarcascade_frontalface_default.xml"]
+    for path in candidate_paths:
+        try:
+            cascade = cv2.CascadeClassifier(str(path))
+            if not cascade.empty():
+                return cascade
+        except Exception:
+            continue
+    return None
+
+
+def _fallback_face_vector(frame_bgr: np.ndarray, cascade: cv2.CascadeClassifier | None) -> np.ndarray | None:
+    if cascade is None:
+        return None
+
+    try:
+        gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
+        faces = cascade.detectMultiScale(gray, scaleFactor=1.2, minNeighbors=5, minSize=(80, 80))
+        if len(faces) == 0:
+            return None
+        x, y, width, height = faces[0]
+        face = gray[y : y + height, x : x + width]
+        normalized = cv2.resize(face, (64, 64), interpolation=cv2.INTER_AREA)
+        return normalized.flatten().astype(np.float32)
+    except Exception:
+        return None
+
+
+def _fallback_match_name(candidate: np.ndarray, known_names: list[str], known_encodings: list[np.ndarray]) -> str:
+    best_name = ""
+    best_score: float | None = None
+
+    for name, encoding in zip(known_names, known_encodings):
+        try:
+            known = np.asarray(encoding, dtype=np.float32).flatten()
+            if known.size != candidate.size:
+                continue
+            score = float(np.mean(np.abs(known - candidate)))
+            if best_score is None or score < best_score:
+                best_score = score
+                best_name = str(name)
+        except Exception:
+            continue
+
+    if best_name and best_score is not None and best_score <= 28.0:
+        return best_name
+    return ""
+
+
 def _auth_result_success(user_name: str) -> dict[str, Any]:
     global _current_user
     _current_user = user_name
     _authenticated.set()
     playAssistantSound()
+    speak(f"Welcome Back, {user_name}")
     _call_js("onFaceAuthSuccess", user_name)
     _call_js("setAuthStatus", f"Welcome {user_name}. Access granted.")
     return {"ok": True, "user": user_name}
@@ -258,18 +416,23 @@ def _face_auth_worker() -> None:
             _auth_result_fail(message)
             return
 
+        speak("Ready For Face Authentication")
         _call_js("setAuthStatus", "Camera started. Scanning face...")
         known_names, known_encodings = _load_known_face_profiles()
 
+        recognition_available = face_recognition is not None and bool(known_encodings)
+        fallback_available = bool(known_encodings)
+        fallback_cascade = _load_haar_cascade() if fallback_available else None
+
         if not known_encodings:
-            _auth_result_fail("No enrolled face profile found. Use PIN fallback.")
-            return
+            _call_js("setAuthStatus", "No enrolled face profile found. Showing camera preview. Use PIN fallback.")
+        elif face_recognition is None:
+            _call_js("setAuthStatus", "Advanced face package unavailable. Running basic face scan...")
 
-        if face_recognition is None:
-            _auth_result_fail("Face recognition package not available. Use PIN fallback.")
-            return
-
-        deadline = time.time() + 24
+        timeout_seconds = int(float(db.get_setting("face_auth_timeout_seconds", "24") or 24))
+        if timeout_seconds < 8:
+            timeout_seconds = 8
+        deadline = time.time() + timeout_seconds
         authenticated_name = ""
 
         while time.time() < deadline and not _camera_stop_event.is_set():
@@ -283,24 +446,38 @@ def _face_auth_worker() -> None:
             preview = cv2.flip(frame, 1)
             _call_js("updateCameraFrame", "face-auth", _encode_frame(preview))
 
-            rgb = cv2.cvtColor(preview, cv2.COLOR_BGR2RGB)
-            locations = face_recognition.face_locations(rgb)
-            encodings = face_recognition.face_encodings(rgb, locations)
+            if recognition_available:
+                try:
+                    rgb = cv2.cvtColor(preview, cv2.COLOR_BGR2RGB)
+                    locations = face_recognition.face_locations(rgb)
+                    encodings = face_recognition.face_encodings(rgb, locations)
 
-            for candidate in encodings:
-                matches = face_recognition.compare_faces(known_encodings, candidate, tolerance=0.45)
-                if True in matches:
-                    distances = face_recognition.face_distance(known_encodings, candidate)
-                    best_idx = int(np.argmin(distances))
-                    if matches[best_idx]:
-                        authenticated_name = known_names[best_idx]
-                        break
+                    for candidate in encodings:
+                        matches = face_recognition.compare_faces(known_encodings, candidate, tolerance=0.45)
+                        if True in matches:
+                            distances = face_recognition.face_distance(known_encodings, candidate)
+                            best_idx = int(np.argmin(distances))
+                            if matches[best_idx]:
+                                authenticated_name = known_names[best_idx]
+                                break
+                except Exception:
+                    recognition_available = False
+                    _call_js("setAuthStatus", "Primary face scan unstable. Continuing with basic fallback scan...")
+            elif fallback_available:
+                candidate = _fallback_face_vector(preview, fallback_cascade)
+                if candidate is not None:
+                    authenticated_name = _fallback_match_name(candidate, known_names, known_encodings)
 
             if authenticated_name:
                 _auth_result_success(authenticated_name)
                 return
 
-        _auth_result_fail("Face not recognized. Enter PIN to continue.")
+        if not known_encodings:
+            _auth_result_fail("No enrolled face profile found. Enter PIN to continue.")
+        elif face_recognition is None:
+            _auth_result_fail("Face package not available and fallback did not match. Enter PIN to continue.")
+        else:
+            _auth_result_fail("Face not recognized. Enter PIN to continue.")
     except Exception as exc:
         db.log_event("warning", f"Face auth error: {exc}", source="auth")
         _auth_result_fail("Face scan failed. Please use PIN fallback.")
@@ -424,54 +601,149 @@ def _emotion_worker() -> None:
         _emotion_running.clear()
         return
 
-    frames: list[np.ndarray] = []
+    sample_target = _read_int_setting("emotion_sample_count", 12, 6, 24)
+    confidence_threshold = _read_float_setting("emotion_confidence_threshold", 0.60, 0.45, 0.95)
+    sample_interval = _read_float_setting("emotion_sample_interval_seconds", 0.18, 0.08, 0.5)
+    autoplay_enabled = _setting_bool("emotion_auto_play_enabled", True)
+    deadline = time.time() + max(5.0, min(20.0, sample_target * sample_interval + 4.0))
+    min_samples = max(4, min(sample_target, max(4, sample_target // 2)))
+
+    vote_counts: Counter[str] = Counter()
+    recent_labels: deque[str] = deque(maxlen=5)
+    sample_count = 0
+    last_label = "neutral"
+    last_confidence = 0.0
+
+    _call_js(
+        "setEmotionResult",
+        {
+            "ok": True,
+            "stage": "analyzing",
+            "emotion": "neutral",
+            "smoothed_emotion": "neutral",
+            "confidence": 0.0,
+            "sample_count": 0,
+            "sample_target": sample_target,
+            "message": "Camera started. Analyzing expression...",
+        },
+    )
+
     try:
-        for _ in range(10):
-            if _camera_capture is None or _camera_stop_event.is_set():
+        while time.time() < deadline and not _camera_stop_event.is_set():
+            if _camera_capture is None:
                 break
             ok, frame = _camera_capture.read()
             if not ok:
+                time.sleep(sample_interval)
                 continue
             preview = cv2.flip(frame, 1)
-            frames.append(preview)
-            _call_js("updateCameraFrame", "baby-monitor", _encode_frame(preview))
-            time.sleep(0.12)
+            _call_js("updateCameraFrame", "emotion", _encode_frame(preview))
+            emotion = "neutral"
+            frame_confidence = 0.0
+            if DeepFace is not None:
+                try:
+                    analysis = DeepFace.analyze(preview, actions=["emotion"], enforce_detection=False, silent=True)
+                    if isinstance(analysis, list):
+                        analysis = analysis[0] if analysis else {}
+                    emotion, frame_confidence = _emotion_confidence_from_analysis(analysis if isinstance(analysis, dict) else {})
+                except Exception:
+                    emotion = "neutral"
+                    frame_confidence = 0.0
 
-        if not frames:
+            sample_count += 1
+            vote_counts[emotion] += 1
+            recent_labels.append(emotion)
+            last_label = emotion
+            last_confidence = frame_confidence
+
+            dominant_label, dominant_votes = vote_counts.most_common(1)[0]
+            recent_vote_counts = Counter(recent_labels)
+            recent_label, recent_votes = recent_vote_counts.most_common(1)[0]
+            smoothed_label = recent_label if recent_votes >= dominant_votes else dominant_label
+            vote_confidence = dominant_votes / max(sample_count, 1)
+            recent_confidence = recent_votes / max(len(recent_labels), 1)
+            confidence = max(vote_confidence, recent_confidence, frame_confidence)
+
+            status_message = (
+                f"Analyzing expression... {smoothed_label.title()} detected at {confidence:.0%} confidence."
+            )
+            _call_js(
+                "setEmotionResult",
+                {
+                    "ok": True,
+                    "stage": "analyzing",
+                    "emotion": emotion,
+                    "smoothed_emotion": smoothed_label,
+                    "confidence": round(confidence, 3),
+                    "frame_confidence": round(frame_confidence, 3),
+                    "sample_count": sample_count,
+                    "sample_target": sample_target,
+                    "message": status_message,
+                },
+            )
+
+            if sample_count >= min_samples and confidence >= confidence_threshold:
+                break
+
+            time.sleep(sample_interval)
+
+        if sample_count == 0:
             _call_js("setEmotionResult", {"ok": False, "message": "No camera frames captured."})
             return
 
-        mood_counts: dict[str, int] = {}
-        for frame in frames:
-            emotion = "neutral"
-            if DeepFace is not None:
-                try:
-                    analysis = DeepFace.analyze(frame, actions=["emotion"], enforce_detection=False, silent=True)
-                    if isinstance(analysis, list):
-                        analysis = analysis[0]
-                    emotion = str(analysis.get("dominant_emotion", "neutral")).lower()
-                except Exception:
-                    emotion = "neutral"
-            mood_counts[emotion] = mood_counts.get(emotion, 0) + 1
+        dominant_label, dominant_votes = vote_counts.most_common(1)[0]
+        recent_vote_counts = Counter(recent_labels)
+        recent_label, recent_votes = recent_vote_counts.most_common(1)[0]
+        final_label = recent_label if recent_votes >= dominant_votes else dominant_label
+        final_confidence = dominant_votes / max(sample_count, 1)
+        if recent_votes / max(len(recent_labels), 1) > final_confidence:
+            final_confidence = recent_votes / max(len(recent_labels), 1)
+        final_confidence = max(final_confidence, last_confidence)
 
-        dominant = max(mood_counts.items(), key=lambda item: item[1])[0]
-        mapping = {
-            "happy": "upbeat driving hits",
-            "sad": "calm lofi chill",
-            "angry": "relaxing ambient music",
-            "neutral": "daily mix",
-        }
-        query = mapping.get(dominant, "daily mix")
-        play_result = spotify_play_music(query)
+        query = _emotion_query_for_label(final_label)
+        emotion_keywords = _emotion_keywords_for_label(final_label)
+        play_result: dict[str, Any] | None = None
+        
+        if autoplay_enabled and final_confidence >= confidence_threshold:
+            # Try emotion-based playlist first
+            if emotion_keywords:
+                play_result = spotify_play_emotion_playlist(final_label, emotion_keywords)
+            
+            # Fallback to generic query search if playlist selection failed or returned no match
+            if not play_result or not play_result.get("ok"):
+                play_result = spotify_play_music(query)
 
-        result = {
-            "ok": True,
-            "emotion": dominant,
-            "query": query,
-            "spotify": play_result,
-            "message": f"Detected {dominant}. Playing {query}.",
-        }
-        _call_js("setEmotionResult", result)
+        if play_result and play_result.get("ok"):
+            track_name = play_result.get("track_name") or "music"
+            playlist_name = play_result.get("playlist_name") or ""
+            if playlist_name:
+                message = f"Detected {final_label}. Playing '{track_name}' from '{playlist_name}'."
+            else:
+                message = f"Detected {final_label}. Playing {query}."
+        elif autoplay_enabled:
+            device_error = play_result and play_result.get("message") if play_result else "Spotify unavailable."
+            if "No active Spotify device" in str(device_error):
+                message = f"Detected {final_label} with {final_confidence:.0%} confidence. No active Spotify device. Open Spotify on a device first."
+            else:
+                message = f"Detected {final_label} with {final_confidence:.0%} confidence. Spotify autoplay unavailable: {device_error}"
+        else:
+            message = f"Detected {final_label} with {final_confidence:.0%} confidence. Autoplay is disabled."
+
+        _call_js(
+            "setEmotionResult",
+            {
+                "ok": True,
+                "stage": "done",
+                "emotion": final_label,
+                "smoothed_emotion": final_label,
+                "confidence": round(final_confidence, 3),
+                "sample_count": sample_count,
+                "sample_target": sample_target,
+                "query": query,
+                "spotify": play_result,
+                "message": message,
+            },
+        )
     finally:
         _release_camera("emotion")
         _emotion_running.clear()
@@ -486,7 +758,22 @@ def _camera_stream_worker(owner: str, running_event: threading.Event) -> None:
             if not ok:
                 continue
             preview = cv2.flip(frame, 1)
-            _call_js("updateCameraFrame", owner, _encode_frame(preview))
+            if owner == "baby-monitor" and _setting_bool("baby_monitor_dl_enabled", True):
+                processed, result = _baby_monitor_dl.analyze_frame(preview)
+                _baby_last_state.update(
+                    {
+                        "wake_up": bool(result.wake_up),
+                        "moving": bool(result.moving),
+                        "outside": bool(result.outside),
+                        "ear": float(result.ear),
+                        "motion_score": float(result.motion_score),
+                        "message": str(result.message),
+                    }
+                )
+                _call_js("setBabyMonitorState", dict(_baby_last_state))
+                _call_js("updateCameraFrame", owner, _encode_frame(processed))
+            else:
+                _call_js("updateCameraFrame", owner, _encode_frame(preview))
             time.sleep(0.03)
     finally:
         running_event.clear()
@@ -516,7 +803,8 @@ def startFaceAuth() -> dict[str, Any]:
 @eel.expose
 def verifyPIN(pin: str) -> dict[str, Any]:
     entered = str(pin or "").strip()
-    if entered == DEFAULT_PIN:
+    configured_pin = str(db.get_setting("security_pin", DEFAULT_PIN) or DEFAULT_PIN).strip()
+    if entered == configured_pin:
         return _auth_result_success("Driver")
     return _auth_result_fail("Invalid PIN. Please retry.")
 
@@ -526,8 +814,6 @@ def openApp(appName: str) -> dict[str, Any]:
     global _active_app
     _active_app = str(appName or "").strip().lower()
     _call_js("openAppFromBackend", _active_app)
-    with _vehicle_lock:
-        _vehicle_state["mode"] = "driving"
     return {"ok": True, "activeApp": _active_app}
 
 
@@ -537,8 +823,6 @@ def closeApp() -> dict[str, Any]:
     _active_app = ""
     stopCamera()
     _call_js("closeAppFromBackend")
-    with _vehicle_lock:
-        _vehicle_state["mode"] = "ambient"
     return {"ok": True}
 
 
@@ -559,7 +843,7 @@ def startBabyMonitoring() -> dict[str, Any]:
 
     _baby_monitor_running.set()
     threading.Thread(target=_camera_stream_worker, args=("baby-monitor", _baby_monitor_running), daemon=True).start()
-    return {"ok": True, "message": "Baby monitoring started."}
+    return {"ok": True, "message": "Baby monitoring started with deep-learning analysis."}
 
 
 @eel.expose
@@ -569,6 +853,21 @@ def stopCamera() -> dict[str, Any]:
     _release_camera("face-auth")
     _baby_monitor_running.clear()
     return {"ok": True, "message": "Camera stopped."}
+
+
+@eel.expose
+def getBabyMonitorState() -> dict[str, Any]:
+    return dict(_baby_last_state)
+
+
+@eel.expose
+def setBabyMonitorRegion(points: list[list[float]]) -> dict[str, Any]:
+    _baby_monitor_dl.set_region_points(points)
+    return {
+        "ok": True,
+        "message": "Monitoring region updated.",
+        "points": _baby_monitor_dl.get_region_points(),
+    }
 
 
 @eel.expose
@@ -588,6 +887,13 @@ def startEmotionDetection() -> dict[str, Any]:
 @eel.expose
 def playSpotify(query: str | None = None) -> dict[str, Any]:
     result = spotify_play_music(query)
+    _call_js("setSpotifyState", result.get("state", result))
+    return result
+
+
+@eel.expose
+def playSpotifyUri(uri: str) -> dict[str, Any]:
+    result = spotify_play_uri(uri)
     _call_js("setSpotifyState", result.get("state", result))
     return result
 
@@ -760,9 +1066,62 @@ def getSettings() -> dict[str, str]:
 def saveSettings(settings: dict[str, Any]) -> dict[str, str]:
     if isinstance(settings, dict):
         db.save_settings(settings)
+        _baby_monitor_dl.update_settings(settings)
         if _current_user:
             db.save_settings_for_user(_current_user, settings)
     return getSettings()
+
+
+@eel.expose
+def getLightsState() -> dict[str, Any]:
+    return {"ok": True, **_lights_state}
+
+
+@eel.expose
+def setLightsState(on: bool, brightness: int = 0) -> dict[str, Any]:
+    _lights_state["on"] = bool(on)
+    _lights_state["brightness"] = max(0, min(100, int(brightness)))
+    return {"ok": True, **_lights_state}
+
+
+@eel.expose
+def getClimateState() -> dict[str, Any]:
+    return {"ok": True, **_climate_state}
+
+
+@eel.expose
+def setClimateState(temperature: int) -> dict[str, Any]:
+    _climate_state["temperature"] = max(16, min(30, int(temperature)))
+    return {"ok": True, **_climate_state}
+
+
+@eel.expose
+def addVoiceMessage(message_type: str, message: str) -> dict[str, Any]:
+    if message_type not in ["user", "assistant", "system"]:
+        message_type = "system"
+    _voice_messages.append({"type": message_type, "text": message, "timestamp": time.time()})
+    if len(_voice_messages) > 100:
+        _voice_messages.pop(0)
+    return {"ok": True, "message_count": len(_voice_messages)}
+
+
+@eel.expose
+def getVoiceHistory() -> dict[str, Any]:
+    return {"ok": True, "messages": _voice_messages[-20:]}
+
+
+@eel.expose
+def showNavigationDirections(destination: str, distance: str, eta: str, current_instruction: str = "", next_instruction: str = "") -> dict[str, Any]:
+    directions = {
+        "destination": destination,
+        "total_distance": distance,
+        "eta": eta,
+        "current_instruction": current_instruction or "Starting navigation...",
+        "current_distance": "0 m",
+        "next_instruction": next_instruction or "Continue",
+    }
+    _call_js("showDirections", directions)
+    return {"ok": True, **directions}
 
 
 def _start_background_threads() -> None:
