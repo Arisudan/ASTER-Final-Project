@@ -373,6 +373,14 @@ function openApp(appName, options = {}) {
   document.querySelectorAll(".app-pane").forEach((pane) => pane.classList.add("hidden"));
   byId(appPaneMap[name])?.classList.remove("hidden");
 
+  // Hide bottom nav for Spotify player
+  const bottomNav = document.querySelector(".bottom-nav");
+  if (name === "spotify" && bottomNav) {
+    bottomNav.classList.add("hidden");
+  } else if (bottomNav) {
+    bottomNav.classList.remove("hidden");
+  }
+
   showScreen(SCREENS.app);
 
   if (window.eel && syncBackend) {
@@ -412,6 +420,13 @@ function closeApp(options = {}) {
   state.activeApp = "";
   byId("appLauncher")?.classList.remove("hidden");
   document.querySelectorAll(".app-pane").forEach((pane) => pane.classList.add("hidden"));
+  
+  // Show bottom nav when returning to dashboard
+  const bottomNav = document.querySelector(".bottom-nav");
+  if (bottomNav) {
+    bottomNav.classList.remove("hidden");
+  }
+  
   showScreen(SCREENS.dashboard);
 
   if (window.eel && syncBackend) {
