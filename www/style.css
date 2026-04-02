@@ -312,12 +312,12 @@ button {
 }
 
 .camera-frame {
-  height: 230px;
+  height: clamp(160px, 25vw, 230px);
   border-radius: var(--radius-md);
   border: 1px solid var(--line-soft);
   background: rgba(0, 0, 0, 0.24);
   overflow: hidden;
-  margin: 12px 0;
+  margin: clamp(10px, 1.4vw, 12px) 0;
 }
 
 .camera-frame img {
@@ -327,23 +327,23 @@ button {
 }
 
 .camera-frame--large {
-  height: 360px;
+  height: clamp(240px, 40vw, 360px);
 }
 
 .emotion-status-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin: 14px 0 10px;
+  grid-template-columns: repeat(auto-fit, minmax(clamp(100px, 15vw, 120px), 1fr));
+  gap: clamp(8px, 1.2vw, 10px);
+  margin: clamp(10px, 1.4vw, 14px) 0 10px;
 }
 
 .emotion-chip {
-  min-height: 40px;
-  padding: 10px 12px;
+  min-height: clamp(32px, 5vw, 40px);
+  padding: clamp(8px, 1.2vw, 10px) clamp(10px, 1.4vw, 12px);
   border-radius: 12px;
   border: 1px solid rgba(212, 175, 55, 0.22);
   background: rgba(255, 255, 255, 0.06);
-  font-size: 0.86rem;
+  font-size: clamp(0.75rem, 1.6vw, 0.86rem);
   font-weight: 700;
   color: var(--text-main);
   display: flex;
@@ -353,20 +353,23 @@ button {
 }
 
 .emotion-detail {
-  margin: 0 0 14px;
+  margin: 0 0 clamp(10px, 1.4vw, 14px);
   color: var(--text-muted);
-  font-size: 0.92rem;
+  font-size: clamp(0.8rem, 1.8vw, 0.92rem);
   line-height: 1.5;
 }
 
 .emotion-container {
   display: flex;
-  gap: 16px;
-  height: calc(100vh - 200px);
+  flex-direction: column;
+  gap: clamp(12px, 2vw, 16px);
+  flex: 1;
+  min-height: 0;
 }
 
 .emotion-camera-section {
   flex: 1;
+  min-height: clamp(200px, 40vw, 360px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -377,11 +380,12 @@ button {
 }
 
 .emotion-info-section {
-  flex: 0 0 280px;
+  flex: 0 0 clamp(220px, 25vw, 280px);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   overflow-y: auto;
+  padding: clamp(8px, 1.2vw, 10px);
 }
 
 .camera-frame--emotion {
@@ -502,84 +506,99 @@ button {
 }
 
 .icon-btn {
-  min-height: 40px;
-  min-width: 72px;
+  min-height: clamp(36px, 5vw, 40px);
+  min-width: clamp(64px, 12vw, 72px);
   border-radius: 12px;
-  padding: 0 12px;
+  padding: 0 clamp(10px, 1.4vw, 12px);
   color: inherit;
   background: rgba(255, 255, 255, 0.08);
+  font-size: clamp(0.85rem, 1.8vw, 0.9rem);
+  font-weight: 600;
 }
 
 .map-search-row {
   display: flex;
-  gap: 8px;
+  gap: clamp(6px, 1.2vw, 8px);
   align-items: center;
-  padding: 6px;
+  padding: clamp(4px, 1vw, 6px);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.06);
 }
 
 .map-search-btn {
-  min-width: 86px;
+  min-width: clamp(72px, 12vw, 86px);
+  font-size: clamp(0.85rem, 1.8vw, 0.9rem);
 }
 
 input,
 select {
   width: 100%;
-  min-height: 42px;
+  min-height: clamp(36px, 5vw, 42px);
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   background: rgba(255, 255, 255, 0.08);
   color: inherit;
-  padding: 0 12px;
+  padding: 0 clamp(10px, 1.4vw, 12px);
+  font-size: clamp(0.85rem, 1.8vw, 0.95rem);
 }
 
 .map-box {
   width: 100%;
-  min-height: 180px;
+  min-height: clamp(140px, 25vw, 180px);
   border-radius: 14px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .map-box--large {
-  min-height: 340px;
+  min-height: clamp(240px, 40vw, 340px);
 }
 
 .app-shell {
-  width: min(1360px, 98vw);
-  height: calc(100vh - 122px);
-  padding: 14px;
+  width: 100%;
+  height: 100%;
+  padding: clamp(10px, 1.4vw, 20px);
   border-radius: var(--radius-xl);
   border: 1px solid var(--line);
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(8px, 1.2vw, 14px);
+  overflow: hidden;
 }
 
 .app-header {
-  height: 52px;
+  height: clamp(40px, 6vw, 52px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(1rem, 2.2vw, 1.5rem);
+  font-weight: 700;
+}
+
+.back-arrow {
+  position: absolute;
+  left: clamp(8px, 1.4vw, 14px);
+  top: clamp(8px, 1.2vw, 12px);
+  min-width: 48px;
+  min-height: 48px;
+  border-radius: 12px;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  z-index: 4;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.back-arrow {
-  position: absolute;
-  left: 14px;
-  top: 12px;
-  min-width: 62px;
-  min-height: 48px;
-  border-radius: 12px;
-  color: inherit;
-  background: rgba(255, 255, 255, 0.08);
-  font-size: 1.2rem;
-  z-index: 4;
-}
-
 .app-grid {
-  height: calc(100% - 60px);
+  flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-columns: repeat(3, minmax(180px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(clamp(140px, 20vw, 180px), 1fr));
+  gap: clamp(10px, 1.2vw, 12px);
+  overflow-y: auto;
 }
 
 .app-card {
@@ -588,28 +607,30 @@ select {
   background:
     radial-gradient(circle at 15% 10%, rgba(212, 175, 55, 0.22), transparent 30%),
     rgba(255, 255, 255, 0.08);
-  font-size: 1.02rem;
+  font-size: clamp(0.9rem, 2vw, 1.02rem);
   font-weight: 700;
+  padding: clamp(8px, 1.2vw, 12px);
 }
 
 .app-pane {
-  height: calc(100% - 60px);
-  overflow: auto;
-  padding: 10px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: clamp(8px, 1.2vw, 10px);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: clamp(8px, 1.2vw, 10px);
 }
 
 .list-box {
-  min-height: 120px;
-  max-height: 220px;
+  min-height: clamp(80px, 12vw, 120px);
+  max-height: clamp(160px, 18vw, 220px);
   overflow: auto;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 12px;
-  padding: 10px;
+  padding: clamp(8px, 1.2vw, 10px);
   background: rgba(255, 255, 255, 0.05);
-  font-size: 0.9rem;
+  font-size: clamp(0.8rem, 1.8vw, 0.9rem);
   line-height: 1.4;
 }
 
@@ -624,12 +645,12 @@ select {
 
 .monitor-status-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(120px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(clamp(100px, 15vw, 120px), 1fr));
+  gap: clamp(6px, 1.2vw, 8px);
 }
 
 .monitor-badge {
-  min-height: 42px;
+  min-height: clamp(34px, 5vw, 42px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -637,7 +658,7 @@ select {
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.06);
   font-weight: 600;
-  font-size: 0.82rem;
+  font-size: clamp(0.7rem, 1.6vw, 0.82rem);
 }
 
 .monitor-badge--active {
@@ -653,19 +674,21 @@ select {
 .settings-block {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
-  padding: 12px;
-  margin-bottom: 10px;
+  padding: clamp(10px, 1.4vw, 12px);
+  margin-bottom: clamp(8px, 1.2vw, 10px);
   background: rgba(255, 255, 255, 0.04);
 }
 
 .settings-block h5 {
   margin: 0 0 10px 0;
-  font-size: 0.95rem;
+  font-size: clamp(0.85rem, 2vw, 0.95rem);
   color: var(--gold-soft);
+  font-weight: 700;
 }
 
 .large-controls .icon-btn {
-  min-width: 110px;
+  min-width: clamp(90px, 12vw, 110px);
+  font-size: clamp(0.9rem, 2vw, 1rem);
 }
 
 .bottom-nav {
@@ -716,7 +739,9 @@ select {
 
   .dashboard,
   .app-shell {
-    height: calc(100vh - 128px);
+    height: 100%;
+    width: 100%;
+    padding: 10px;
   }
 
   .dashboard {
@@ -726,7 +751,7 @@ select {
   }
 
   .app-grid {
-    grid-template-columns: repeat(2, minmax(130px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(clamp(120px, 18vw, 150px), 1fr));
   }
 
   .bottom-nav {
@@ -744,39 +769,67 @@ select {
     grid-template-columns: 1fr;
   }
 
+  .emotion-camera-section {
+    min-height: 240px;
+  }
+
+  .emotion-info-section {
+    flex: 0 0 auto;
+    min-height: auto;
+  }
+
   #authScreen {
     flex-direction: column;
     justify-content: center;
   }
 }
 
+@media (max-width: 760px) {
+  .app-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .emotion-container {
+    flex-direction: column;
+  }
+
+  .emotion-camera-section {
+    min-height: 240px;
+  }
+
+  .emotion-info-section {
+    flex: 0 0 auto;
+  }
+}
+
 .spotify-account-card {
-  padding: 16px;
+  padding: clamp(12px, 1.8vw, 16px);
   border-radius: 14px;
   background: rgba(29, 185, 84, 0.15);
   border: 1px solid rgba(29, 185, 84, 0.3);
-  margin-bottom: 14px;
+  margin-bottom: clamp(10px, 1.4vw, 14px);
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: clamp(10px, 1.6vw, 14px);
 }
 
 .spotify-account-card img {
-  width: 64px;
-  height: 64px;
+  width: clamp(48px, 8vw, 64px);
+  height: clamp(48px, 8vw, 64px);
   border-radius: 50%;
   object-fit: cover;
 }
 
 .spotify-account-info h5 {
   margin: 0 0 4px 0;
-  font-size: 1rem;
+  font-size: clamp(0.9rem, 2vw, 1rem);
   color: #1db954;
+  font-weight: 700;
 }
 
 .spotify-account-info p {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: clamp(0.75rem, 1.6vw, 0.85rem);
   opacity: 0.8;
 }
 
@@ -789,7 +842,7 @@ select {
 
 .tab-btn {
   flex: 1;
-  padding: 10px;
+  padding: clamp(8px, 1.2vw, 10px);
   border: none;
   background: transparent;
   color: inherit;
@@ -797,7 +850,7 @@ select {
   border-bottom: 2px solid transparent;
   transition: all 0.2s ease;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: clamp(0.8rem, 1.8vw, 0.9rem);
 }
 
 .tab-btn.active {
@@ -822,40 +875,28 @@ select {
 .playlist-item,
 .track-item {
   display: flex;
-  gap: 12px;
-  padding: 10px;
+  gap: clamp(10px, 1.6vw, 12px);
+  padding: clamp(8px, 1.2vw, 10px);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.05);
-  margin-bottom: 8px;
+  margin-bottom: clamp(6px, 1vw, 8px);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.playlist-item:hover,
-.track-item:hover {
-  background: rgba(29, 185, 84, 0.2);
-  transform: translateX(4px);
-}
-
 .playlist-item img,
 .track-item img {
-  width: 48px;
-  height: 48px;
+  width: clamp(40px, 6vw, 48px);
+  height: clamp(40px, 6vw, 48px);
   border-radius: 8px;
   object-fit: cover;
   flex-shrink: 0;
 }
 
-.playlist-item-info,
-.track-item-info {
-  flex: 1;
-  min-width: 0;
-}
-
 .playlist-item-info h6,
 .track-item-info h6 {
   margin: 0 0 4px 0;
-  font-size: 0.95rem;
+  font-size: clamp(0.85rem, 1.8vw, 0.95rem);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -864,7 +905,7 @@ select {
 .playlist-item-info p,
 .track-item-info p {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: clamp(0.75rem, 1.6vw, 0.85rem);
   opacity: 0.7;
   white-space: nowrap;
   overflow: hidden;
@@ -919,7 +960,7 @@ select {
 }
 
 .slider-group label {
-  font-size: 0.85rem;
+  font-size: clamp(0.75rem, 1.6vw, 0.85rem);
   color: var(--text-muted);
 }
 
@@ -961,14 +1002,14 @@ select {
 }
 
 .temp-btn {
-  min-width: 34px;
-  padding: 6px;
+  min-width: clamp(32px, 6vw, 34px);
+  padding: clamp(4px, 1vw, 6px);
   border: 1px solid var(--line-soft);
   background: rgba(255, 255, 255, 0.08);
   border-radius: 8px;
   color: inherit;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: clamp(0.9rem, 1.8vw, 1rem);
   transition: all 0.2s ease;
 }
 
@@ -978,14 +1019,15 @@ select {
 }
 
 .toggle-btn {
-  padding: 8px 14px;
+  padding: clamp(6px, 1.2vw, 8px) clamp(12px, 1.8vw, 14px);
   border: 1px solid var(--line-soft);
   background: rgba(255, 255, 255, 0.08);
   border-radius: 8px;
   color: inherit;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 0.9rem;
+  font-size: clamp(0.8rem, 1.8vw, 0.9rem);
+  font-weight: 600;
 }
 
 .toggle-btn:hover {
@@ -1034,9 +1076,9 @@ select {
 }
 
 .transcript-message {
-  padding: 8px 10px;
+  padding: clamp(6px, 1.2vw, 8px) clamp(8px, 1.4vw, 10px);
   border-radius: 8px;
-  font-size: 0.9rem;
+  font-size: clamp(0.8rem, 1.8vw, 0.9rem);
   line-height: 1.4;
 }
 
@@ -1066,14 +1108,14 @@ select {
 /* Navigation Directions */
 .directions-panel {
   position: absolute;
-  bottom: 16px;
-  left: 16px;
-  right: 16px;
+  bottom: clamp(10px, 1.4vw, 16px);
+  left: clamp(10px, 1.4vw, 16px);
+  right: clamp(10px, 1.4vw, 16px);
   background: var(--dark-surface);
   border: 1px solid var(--line);
   border-radius: 14px;
-  padding: 14px;
-  max-height: 280px;
+  padding: clamp(10px, 1.4vw, 14px);
+  max-height: clamp(240px, 35vw, 280px);
   overflow-y: auto;
   z-index: 10;
 }
@@ -1082,87 +1124,38 @@ select {
   display: none;
 }
 
-.directions-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--line-soft);
-}
-
 .directions-header h5 {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: clamp(0.85rem, 2vw, 0.95rem);
   color: var(--gold-soft);
-}
-
-.directions-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.directions-current {
-  padding: 12px;
-  background: rgba(212, 175, 55, 0.1);
-  border-radius: 10px;
-  border-left: 3px solid var(--gold-soft);
+  font-weight: 700;
 }
 
 .instruction-primary {
-  font-size: 1rem;
+  font-size: clamp(0.85rem, 2vw, 1rem);
   font-weight: 600;
   color: var(--gold-soft);
   margin-bottom: 6px;
 }
 
 .instruction-distance {
-  font-size: 1.1rem;
+  font-size: clamp(0.95rem, 2.2vw, 1.1rem);
   font-weight: 700;
   color: var(--gold);
 }
 
-.directions-next {
-  padding: 10px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-}
-
-.next-label {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin: 0 0 4px 0;
-}
-
 .instruction-secondary {
-  font-size: 0.9rem;
+  font-size: clamp(0.8rem, 1.8vw, 0.9rem);
   color: var(--text-main);
 }
 
-.directions-eta {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-}
-
-.eta-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 10px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  text-align: center;
-}
-
 .eta-label {
-  font-size: 0.8rem;
+  font-size: clamp(0.7rem, 1.4vw, 0.8rem);
   color: var(--text-muted);
 }
 
 .eta-value {
-  font-size: 0.95rem;
+  font-size: clamp(0.85rem, 1.8vw, 0.95rem);
   font-weight: 600;
   color: var(--gold-soft);
 }
@@ -1185,16 +1178,17 @@ select {
 }
 
 .spx-sidebar {
-  width: 250px;
+  width: clamp(180px, 20vw, 250px);
   background-color: #000;
-  padding: 20px;
+  padding: clamp(12px, 1.8vw, 20px);
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: clamp(12px, 1.8vw, 20px);
+  overflow-y: auto;
 }
 
 .spx-logo img {
-  width: 130px;
+  width: clamp(90px, 12vw, 130px);
 }
 
 .spx-main-nav,
@@ -1207,12 +1201,12 @@ select {
 .spx-nav-item {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: clamp(12px, 1.8vw, 15px);
   color: #b3b3b3;
   text-decoration: none;
-  font-size: 1rem;
+  font-size: clamp(0.9rem, 1.8vw, 1rem);
   font-weight: 500;
-  padding: 10px 15px;
+  padding: clamp(8px, 1.2vw, 10px) clamp(10px, 1.6vw, 15px);
   border-radius: 8px;
   transition: color 0.2s, background-color 0.2s;
 }
@@ -1228,19 +1222,19 @@ select {
 }
 
 .spx-library p {
-  font-size: 0.9rem;
+  font-size: clamp(0.8rem, 1.6vw, 0.9rem);
   font-weight: 700;
   color: #fff;
   margin: 0;
-  padding-left: 15px;
+  padding-left: clamp(10px, 1.6vw, 15px);
 }
 
 .spx-playlist-list a {
   display: block;
   color: #b3b3b3;
   text-decoration: none;
-  padding: 8px 15px;
-  font-size: 0.9rem;
+  padding: clamp(6px, 1vw, 8px) clamp(10px, 1.6vw, 15px);
+  font-size: clamp(0.8rem, 1.6vw, 0.9rem);
   transition: color 0.2s;
 }
 
@@ -1252,11 +1246,11 @@ select {
   flex: 1;
   background: linear-gradient(to bottom, #1f2c34, #121212);
   overflow-y: auto;
-  padding: 20px;
+  padding: clamp(12px, 1.8vw, 20px);
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  padding-bottom: 120px;
+  gap: clamp(16px, 2.2vw, 24px);
+  padding-bottom: clamp(100px, 18vw, 180px);
 }
 
 .spx-content-header {
@@ -1267,7 +1261,7 @@ select {
 }
 
 .spx-content-header h2 {
-  font-size: 2rem;
+  font-size: clamp(1.4rem, 4vw, 2rem);
   font-weight: 700;
   margin: 0;
   color: #fff;
@@ -1276,8 +1270,8 @@ select {
 .spx-user-profile {
   display: flex;
   align-items: center;
-  gap: 14px;
-  font-size: 1.2rem;
+  gap: clamp(10px, 1.6vw, 14px);
+  font-size: clamp(0.9rem, 1.8vw, 1.2rem);
   color: #b3b3b3;
 }
 
@@ -1285,16 +1279,18 @@ select {
   border: none;
   background: #1f1f1f;
   color: #d4d4d4;
-  width: 34px;
-  height: 34px;
+  width: clamp(30px, 5vw, 34px);
+  height: clamp(30px, 5vw, 34px);
   border-radius: 999px;
   cursor: pointer;
+  font-size: clamp(0.8rem, 1.8vw, 1rem);
 }
 
 .spx-quick-play {
   display: flex;
-  gap: 10px;
+  gap: clamp(8px, 1.2vw, 10px);
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .spx-quick-play input {
@@ -1310,21 +1306,21 @@ select {
 }
 
 .spx-content-section h3 {
-  font-size: 1.5rem;
+  font-size: clamp(1.2rem, 3vw, 1.5rem);
   font-weight: 700;
   margin: 0;
 }
 
 .spx-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(clamp(140px, 18vw, 180px), 1fr));
+  gap: clamp(14px, 2vw, 18px);
 }
 
 .spx-card {
   background-color: #181818;
   border-radius: 8px;
-  padding: 15px;
+  padding: clamp(10px, 1.4vw, 15px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1333,21 +1329,17 @@ select {
   transition: background-color 0.2s;
 }
 
-.spx-card:hover {
-  background-color: #282828;
-}
-
 .spx-card img {
   width: 100%;
   border-radius: 4px;
-  margin-bottom: 10px;
+  margin-bottom: clamp(8px, 1.2vw, 10px);
   aspect-ratio: 1;
   object-fit: cover;
 }
 
 .spx-card-title {
   margin: 0;
-  font-size: 1rem;
+  font-size: clamp(0.85rem, 1.8vw, 1rem);
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1356,7 +1348,7 @@ select {
 }
 
 .spx-card-subtitle {
-  font-size: 0.9rem;
+  font-size: clamp(0.8rem, 1.6vw, 0.9rem);
   color: #b3b3b3;
   margin-top: 5px;
 }
@@ -1378,28 +1370,24 @@ select {
 .spx-song-info {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: clamp(10px, 1.6vw, 15px);
   width: 30%;
 }
 
 .spx-album-art {
-  width: 60px;
-  height: 60px;
+  width: clamp(48px, 8vw, 60px);
+  height: clamp(48px, 8vw, 60px);
   border-radius: 4px;
   object-fit: cover;
 }
 
-.spx-song-details p {
-  margin: 0;
-}
-
 .spx-song-title {
-  font-size: 1rem;
+  font-size: clamp(0.85rem, 1.8vw, 1rem);
   font-weight: 500;
 }
 
 .spx-song-artist {
-  font-size: 0.9rem;
+  font-size: clamp(0.75rem, 1.6vw, 0.9rem);
   color: #b3b3b3;
 }
 
@@ -1414,8 +1402,8 @@ select {
 .spx-controls {
   display: flex;
   align-items: center;
-  gap: 16px;
-  font-size: 1.1rem;
+  gap: clamp(12px, 2vw, 16px);
+  font-size: clamp(0.9rem, 1.8vw, 1.1rem);
   color: #b3b3b3;
 }
 
@@ -1424,19 +1412,25 @@ select {
   background: transparent;
   color: #fff;
   cursor: pointer;
-  font-size: 1.1rem;
+  font-size: clamp(0.95rem, 2vw, 1.1rem);
 }
 
 .spx-control-btn i.fa-play-circle,
 .spx-control-btn i.fa-pause-circle {
-  font-size: 2rem;
+  font-size: clamp(1.6rem, 3vw, 2rem);
 }
 
 .spx-progress-bar-container {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: clamp(8px, 1.2vw, 10px);
   width: 100%;
+}
+
+.spx-current-time,
+.spx-total-time {
+  font-size: clamp(0.7rem, 1.4vw, 0.85rem);
+  color: #b3b3b3;
 }
 
 .spx-progress-bar {
