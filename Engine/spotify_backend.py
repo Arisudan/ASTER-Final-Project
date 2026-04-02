@@ -627,3 +627,96 @@ def get_recently_played(limit: int = 20) -> dict[str, Any]:
     except Exception as exc:
         return {"connected": False, "message": f"Unable to fetch recently played tracks: {exc}", "tracks": []}
 
+
+def search_spotify(query: str, limit: int = 8) -> dict[str, Any]:
+    """Search Spotify for tracks matching the query."""
+    client = _get_client()
+    if client is None:
+        return {"ok": False, "message": "Spotify is not configured.", "tracks": []}
+
+    try:
+        result = client.search(q=query, type="track", limit=limit)
+        tracks = []
+        for item in result.get("tracks", {}).get("items", []):
+            artists = item.get("artists", [])
+            album = item.get("album", {})
+            images = album.get("images", []) if album else []
+            tracks.append({
+                "id": item.get("id", ""),
+                "name": item.get("name", "Untitled"),
+                "artist": ", ".join(artist.get("name", "Unknown") for artist in artists),
+                "artists": ", ".join(artist.get("name", "Unknown") for artist in artists),
+                "album": album.get("name", "Unknown Album") if album else "Unknown Album",
+                "duration_ms": item.get("duration_ms", 0),
+                "image": images[0].get("url", "") if images and isinstance(images[0], dict) else "https://picsum.photos/40/40?random=" + str(hash(query)),
+                "uri": item.get("uri", ""),
+            })
+        return {"ok": True, "message": f"Found {len(tracks)} tracks.", "tracks": tracks}
+    except Exception as exc:
+        return {"ok": False, "message": f"Search failed: {exc}", "tracks": []}
+
+
+def get_playlist_tracks(playlist_uri: str, limit: int = 50) -> dict[str, Any]:
+    """
+    Fetch all tracks from a specific playlist given its URI.
+    """
+    client = _get_client()
+    if client is None:
+        return {"ok": False, "message": "Spotify is not configured.", "tracks": []}
+
+    try:
+        # Extract playlist ID from URI (format: spotify:playlist:ID)
+        playlist_id = playlist_uri.split(":")[-1] if ":" in playlist_uri else playlist_uri
+        
+        result = client.playlist_tracks(playlist_id, limit=limit)
+        tracks = []
+        
+        for item in result.get("items", []):
+            track = item.get("track", {})
+            if not track:
+                continue
+                
+            artists = track.get("artists", [])
+            album = track.get("album", {})
+            images = album.get("images", []) if album else []
+            
+            tracks.append({
+                "id": track.get("id", ""),
+                "name": track.get("name", "Untitled"),
+                "artist": ", ".join(artist.get("name", "Unknown") for artist in artists),
+                "artists": ", ".join(artist.get("name", "Unknown") for artist in artists),
+                "album": album.get("name", "Unknown Album") if album else "Unknown Album",
+                "duration_ms": track.get("duration_ms", 0),
+                "image": images[0].get("url", "") if images and isinstance(images[0], dict) else "https://picsum.photos/56/56?random=" + str(hash(track.get("id", ""))),
+                "uri": track.get("uri", ""),
+            })
+        
+        return {"ok": True, "message": f"Loaded {len(tracks)} tracks from playlist.", "tracks": tracks}
+    except Exception as exc:
+        return {"ok": False, "message": f"Unable to fetch playlist tracks: {exc}", "tracks": []}
+
+
+def seek_track(position_ms: int) -> dict[str, Any]:
+    """
+    Seek to a specific position in the currently playing track.
+    """
+    client = _get_client()
+    if client is None:
+        return {"ok": False, "message": "Spotify is not configured."}
+
+    try:
+        device, device_message = _ensure_playback_device(client)
+        if device is None:
+            return {"ok": False, "message": device_message}
+
+        position_ms = max(0, int(position_ms))
+        client.seek_track(position_ms, device_id=device.get("id"))
+        
+        return {
+            "ok": True,
+            "message": f"Seeked to {position_ms}ms.",
+            "state": get_player_state(),
+        }
+    except Exception as exc:
+        return {"ok": False, "message": f"Unable to seek track: {exc}"}
+

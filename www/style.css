@@ -1417,6 +1417,220 @@ select {
   font-size: clamp(0.8rem, 1.8vw, 1rem);
 }
 
+.spx-search-section {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 30px;
+}
+
+.spx-search-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+}
+
+.spx-search-wrapper i {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #b3b3b3;
+  font-size: 1rem;
+  pointer-events: none;
+}
+
+.spx-search-input {
+  width: 100%;
+  padding: 12px 40px !important;
+  background-color: #282828 !important;
+  border: 2px solid transparent !important;
+  border-radius: 24px;
+  color: #fff !important;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.spx-search-input::placeholder {
+  color: #b3b3b3;
+}
+
+.spx-search-input:focus {
+  background-color: #3e3e3e !important;
+  border-color: #1db954 !important;
+  outline: none;
+}
+
+.spx-search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-width: 360px;
+  background-color: #282828;
+  border-radius: 8px;
+  margin-top: 5px;
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.spx-search-results h3 {
+  padding: 15px 20px 10px;
+  font-size: 0.9rem;
+  color: #b3b3b3;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.spx-search-results-grid {
+  display: flex;
+  flex-direction: column;
+}
+
+.spx-result-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 15px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #404040;
+}
+
+.spx-result-item:hover {
+  background-color: #3e3e3e;
+}
+
+.spx-result-item:last-child {
+  border-bottom: none;
+}
+
+.spx-result-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.spx-result-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.spx-result-title {
+  font-size: 0.95rem;
+  color: #fff;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spx-result-subtitle {
+  font-size: 0.85rem;
+  color: #b3b3b3;
+  margin: 3px 0 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spx-home-content {
+  margin-bottom: 100px;
+}
+
+.spx-playlist-view {
+  margin-bottom: 100px;
+}
+
+.spx-back-btn {
+  background-color: transparent;
+  border: none;
+  color: #fff;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 10px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.2s;
+}
+
+.spx-back-btn:hover {
+  color: #1db954;
+}
+
+.spx-playlist-view h2 {
+  margin: 0 0 20px 0;
+  font-size: 2rem;
+  color: #fff;
+}
+
+.spx-playlist-tracks {
+  display: flex;
+  flex-direction: column;
+}
+
+.spx-track-item {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px;
+  background-color: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #282828;
+}
+
+.spx-track-item:hover {
+  background-color: #282828;
+}
+
+.spx-track-item:last-child {
+  border-bottom: none;
+}
+
+.spx-track-artwork {
+  width: 56px;
+  height: 56px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.spx-track-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.spx-track-name {
+  font-size: 1rem;
+  color: #fff;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spx-track-artists {
+  font-size: 0.9rem;
+  color: #b3b3b3;
+  margin: 5px 0 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spx-track-duration {
+  color: #b3b3b3;
+  font-size: 0.9rem;
+}
+
 .spx-quick-play {
   display: flex;
   gap: clamp(8px, 1.2vw, 10px);
@@ -1556,12 +1770,15 @@ select {
   align-items: center;
   gap: clamp(8px, 1.2vw, 10px);
   width: 100%;
+  cursor: pointer;
 }
 
 .spx-current-time,
 .spx-total-time {
   font-size: clamp(0.7rem, 1.4vw, 0.85rem);
   color: #b3b3b3;
+  min-width: 34px;
+  text-align: center;
 }
 
 .spx-progress-bar {
@@ -1569,6 +1786,14 @@ select {
   height: 4px;
   background-color: #535353;
   border-radius: 2px;
+  cursor: pointer;
+  position: relative;
+  transition: height 0.2s;
+}
+
+.spx-progress-bar:hover {
+  height: 6px;
+  background-color: #636363;
 }
 
 .spx-progress {
@@ -1576,14 +1801,7 @@ select {
   width: 0%;
   background-color: #1db954;
   border-radius: 2px;
-}
-
-.spx-current-time,
-.spx-total-time {
-  font-size: 0.8rem;
-  color: #b3b3b3;
-  min-width: 34px;
-  text-align: center;
+  transition: width 0.1s linear;
 }
 
 .spx-volume-controls {

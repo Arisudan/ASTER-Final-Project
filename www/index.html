@@ -234,19 +234,41 @@
                 </div>
               </header>
 
-              <div class="spx-quick-play">
-                <input id="spotifyDetailQueryInput" type="text" placeholder="Play a song, artist, or playlist" />
-                <button class="btn btn--primary" id="spotifyDetailPlayBtn" type="button">Play</button>
+              <div class="spx-search-section">
+                <div class="spx-search-wrapper">
+                  <i class="fas fa-search"></i>
+                  <input 
+                    id="spotifyDetailQueryInput" 
+                    type="text" 
+                    placeholder="What do you want to listen to?" 
+                    class="spx-search-input"
+                  />
+                </div>
               </div>
 
-              <div class="spx-content-section" id="spxRecentlyPlayedSection">
-                <h3>Recently played</h3>
-                <div class="spx-cards-grid" id="spxRecentlyPlayedGrid"></div>
+              <div id="spxSearchResults" class="spx-search-results hidden">
+                <h3>Search Results</h3>
+                <div id="spxTracksResults" class="spx-search-results-grid"></div>
               </div>
 
-              <div class="spx-content-section" id="spxMadeForYouSection">
-                <h3>Made for you</h3>
-                <div class="spx-cards-grid" id="spxMadeForYouGrid"></div>
+              <div id="spxPlaylistView" class="spx-playlist-view hidden">
+                <button class="spx-back-btn" id="spxBackToHome" type="button">
+                  <i class="fas fa-chevron-left"></i> Back
+                </button>
+                <h2 id="spxPlaylistTitle">Playlist Name</h2>
+                <div id="spxPlaylistTracks" class="spx-playlist-tracks"></div>
+              </div>
+
+              <div id="spxHomeContent" class="spx-home-content">
+                <div class="spx-content-section" id="spxRecentlyPlayedSection">
+                  <h3>Recently played</h3>
+                  <div class="spx-cards-grid" id="spxRecentlyPlayedGrid"></div>
+                </div>
+
+                <div class="spx-content-section" id="spxMadeForYouSection">
+                  <h3>Made for you</h3>
+                  <div class="spx-cards-grid" id="spxMadeForYouGrid"></div>
+                </div>
               </div>
             </main>
 

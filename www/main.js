@@ -1224,12 +1224,220 @@ function bindUI() {
     await playSpotifyByUri(uri, query);
   });
 
-  byId("spotifyDetailQueryInput")?.addEventListener("keydown", async (event) => {
-    if (event.key !== "Enter") return;
-    const query = byId("spotifyDetailQueryInput")?.value || "";
-    if (!query.trim()) return;
-    await playSpotifyByQuery(query);
+  // Spotify search with debouncing and dropdown results
+  let searchTimeout;
+  byId("spotifyDetailQueryInput")?.addEventListener("input", async (event) => {
+    const query = event.target.value.trim();
+    clearTimeout(searchTimeout);
+    
+    const resultsContainer = byId("spxSearchResults");
+    if (!query) {
+      resultsContainer?.classList.add("hidden");
+      return;
+    }
+    
+    resultsContainer?.classList.remove("hidden");
+    
+    searchTimeout = setTimeout(async () => {
+      try {
+        // Call backend to search Spotify
+        const response = await eel.searchSpotify(query)();
+        if (response?.tracks) {
+          renderSearchResults(response.tracks);
+        }
+      } catch (error) {
+        console.error("Search error:", error);
+      }
+    }, 300); // Debounce by 300ms
   });
+
+  // Hide search results when clicking outside
+  document.addEventListener("click", (event) => {
+    const searchWrapper = byId("spotifyDetailQueryInput");
+    const resultsContainer = byId("spxSearchResults");
+    if (!searchWrapper?.contains(event.target) && !resultsContainer?.contains(event.target)) {
+      resultsContainer?.classList.add("hidden");
+    }
+  });
+
+  // Progress bar scrubbing
+  const progressBar = byId("spxProgress")?.parentElement;
+  if (progressBar) {
+    progressBar.addEventListener("click", async (event) => {
+      const rect = progressBar.getBoundingClientRect();
+      const percent = (event.clientX - rect.left) / rect.width;
+      const track = document.querySelector('[id^="spxNowTitle"]');
+      
+      // Get current track duration
+      const totalTimeEl = byId("spxTotalTime");
+      const durationMs = parseDuration(totalTimeEl?.textContent || "0:00") * 1000;
+      const seekMs = Math.max(0, Math.floor(durationMs * percent));
+      
+      try {
+        await eel.seekTrack(seekMs)();
+      } catch (error) {
+        console.error("Seek error:", error);
+      }
+    });
+  }
+
+  // Real-time progress bar updates
+  setInterval(() => {
+    if (state.spotifyPlaying) {
+      refreshSpotifyState();
+    }
+  }, 1000); // Update every second
+
+  // Playlist selection - click playlist to show tracks
+  byId("spxPlaylistLinks")?.addEventListener("click", async (event) => {
+    const link = event.target.closest("a");
+    if (!link) return;
+    event.preventDefault();
+    
+    const playlistUri = link.getAttribute("data-uri") || "";
+    const playlistName = link.getAttribute("data-query") || "";
+    
+    if (!playlistUri) {
+      await playSpotifyByUri(playlistUri, playlistName);
+      return;
+    }
+    
+    try {
+      // Fetch playlist tracks
+      const response = await eel.getPlaylistTracks(playlistUri)();
+      if (response?.tracks) {
+        renderPlaylistView(playlistName, response.tracks, playlistUri);
+      }
+    } catch (error) {
+      console.error("Playlist error:", error);
+      await playSpotifyByUri(playlistUri, playlistName);
+    }
+  });
+
+  // Back button from playlist view
+  byId("spxBackToHome")?.addEventListener("click", () => {
+    byId("spxPlaylistView")?.classList.add("hidden");
+    byId("spxHomeContent")?.classList.remove("hidden");
+  });
+
+  // Volume slider real-time sync
+  const volumeSlider = byId("spotifyDetailVolumeSlider");
+  if (volumeSlider) {
+    volumeSlider.addEventListener("input", (event) => {
+      const volume = event.target.value;
+      // Show volume percentage (optional visual feedback)
+      const volDisplay = document.createElement("span");
+      volDisplay.textContent = `${volume}%`;
+      volDisplay.style.position = "absolute";
+      volDisplay.style.color = "#1db954";
+      volDisplay.style.fontSize = "0.8rem";
+      
+      eel.setSpotifyVolume(volume)().catch(() => undefined);
+    });
+  }
+}
+
+// Helper function to parse duration string (M:SS or MM:SS)
+function parseDuration(timeString) {
+  const parts = timeString.split(":");
+  const minutes = parseInt(parts[0], 10) || 0;
+  const seconds = parseInt(parts[1], 10) || 0;
+  return minutes * 60 + seconds;
+}
+
+// Render search results in dropdown
+function renderSearchResults(tracks) {
+  const grid = byId("spxTracksResults");
+  if (!grid) return;
+  
+  if (!Array.isArray(tracks) || !tracks.length) {
+    grid.innerHTML = "<p style='padding: 15px; color: #b3b3b3;'>No results found</p>";
+    return;
+  }
+  
+  grid.innerHTML = tracks
+    .slice(0, 8) // Limit to 8 results
+    .map((track) => {
+      const trackName = track.name || track.title || "Untitled";
+      const artistName = (track.artists || track.artist || []).toString().split(",")[0] || "Unknown Artist";
+      const imageUrl = track.image || "https://picsum.photos/40/40?random=" + Math.random();
+      const uri = track.uri || "";
+      
+      return `
+        <div class="spx-result-item" data-uri="${uri}" data-query="${trackName} ${artistName}">
+          <img src="${imageUrl}" alt="${trackName}" class="spx-result-img" />
+          <div class="spx-result-info">
+            <p class="spx-result-title">${trackName}</p>
+            <p class="spx-result-subtitle">${artistName}</p>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+  
+  // Add click handlers to results
+  grid.querySelectorAll(".spx-result-item").forEach((item) => {
+    item.addEventListener("click", async () => {
+      const uri = item.getAttribute("data-uri");
+      const query = item.getAttribute("data-query");
+      byId("spxSearchResults")?.classList.add("hidden");
+      await playSpotifyByUri(uri, query);
+    });
+  });
+}
+
+// Render playlist view with track list
+function renderPlaylistView(playlistName, tracks, playlistUri) {
+  const homeContent = byId("spxHomeContent");
+  const playlistView = byId("spxPlaylistView");
+  const playlistTitle = byId("spxPlaylistTitle");
+  const tracksContainer = byId("spxPlaylistTracks");
+  
+  if (!playlistView || !tracksContainer) return;
+  
+  if (playlistTitle) {
+    playlistTitle.textContent = playlistName;
+  }
+  
+  if (!Array.isArray(tracks) || !tracks.length) {
+    tracksContainer.innerHTML = "<p style='padding: 20px; color: #b3b3b3;'>No tracks in this playlist</p>";
+    homeContent?.classList.add("hidden");
+    playlistView.classList.remove("hidden");
+    return;
+  }
+  
+  tracksContainer.innerHTML = tracks
+    .map((track, index) => {
+      const trackName = track.name || track.title || "Untitled";
+      const artistName = (Array.isArray(track.artists) ? track.artists.join(", ") : track.artist) || "Unknown Artist";
+      const imageUrl = track.image || "https://picsum.photos/56/56?random=" + index;
+      const duration = formatMs(track.duration_ms || 0);
+      const uri = track.uri || "";
+      
+      return `
+        <div class="spx-track-item" data-uri="${uri}" data-query="${trackName} ${artistName}">
+          <img src="${imageUrl}" alt="${trackName}" class="spx-track-artwork" />
+          <div class="spx-track-info">
+            <p class="spx-track-name">${trackName}</p>
+            <p class="spx-track-artists">${artistName}</p>
+          </div>
+          <span class="spx-track-duration">${duration}</span>
+        </div>
+      `;
+    })
+    .join("");
+  
+  // Add click handlers to tracks
+  tracksContainer.querySelectorAll(".spx-track-item").forEach((item) => {
+    item.addEventListener("click", async () => {
+      const uri = item.getAttribute("data-uri");
+      const query = item.getAttribute("data-query");
+      await playSpotifyByUri(uri, query);
+    });
+  });
+  
+  homeContent?.classList.add("hidden");
+  playlistView.classList.remove("hidden");
 }
 
 async function startupSequence() {

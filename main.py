@@ -39,6 +39,9 @@ from Engine.spotify_backend import (
     play_emotion_based_playlist as spotify_play_emotion_playlist,
     previous_track as spotify_previous_track,
     set_volume as spotify_set_volume,
+    search_spotify as spotify_search_spotify,
+    get_playlist_tracks as spotify_get_playlist_tracks,
+    seek_track as spotify_seek_track,
 )
 
 try:
@@ -969,6 +972,21 @@ def getSpotifyUserSavedTracks() -> dict[str, Any]:
 @eel.expose
 def getSpotifyRecentlyPlayed() -> dict[str, Any]:
     return get_spotify_recently_played(limit=50)
+
+
+@eel.expose
+def searchSpotify(query: str) -> dict[str, Any]:
+    return spotify_search_spotify(query)
+
+
+@eel.expose
+def getPlaylistTracks(playlist_uri: str) -> dict[str, Any]:
+    return spotify_get_playlist_tracks(playlist_uri)
+
+
+@eel.expose
+def seekTrack(position_ms: int) -> dict[str, Any]:
+    return spotify_seek_track(position_ms)
 
 
 @eel.expose
