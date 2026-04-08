@@ -87,6 +87,7 @@ _camera_stop_event = threading.Event()
 _baby_monitor_running = threading.Event()
 _emotion_running = threading.Event()
 _emotion_monitor_running = threading.Event()
+_emotion_monitor_thread: threading.Thread | None = None
 _baby_monitor_dl = BabyMonitorDL(db.get_all_settings())
 _baby_last_state = {
     "wake_up": False,
@@ -209,6 +210,20 @@ def _emotion_confidence_from_analysis(analysis: dict[str, Any] | None) -> tuple[
     total = sum(max(0.0, float(value or 0.0)) for value in emotion_map.values())
     confidence = float(score or 0.0) / total if total > 0 else 0.0
     return str(dominant or "neutral").lower(), confidence
+
+
+def _analysis_has_face(analysis: dict[str, Any] | None) -> bool:
+    if not isinstance(analysis, dict):
+        return False
+    region = analysis.get("region")
+    if not isinstance(region, dict):
+        return False
+    try:
+        width = float(region.get("w", 0.0) or 0.0)
+        height = float(region.get("h", 0.0) or 0.0)
+    except Exception:
+        return False
+    return width >= 24.0 and height >= 24.0
 
 
 def _landmark_xy(landmarks: list[Any], index: int) -> np.ndarray:
@@ -922,13 +937,24 @@ def _emotion_worker() -> None:
     sample_target = _read_int_setting("emotion_sample_count", 12, 6, 24)
     confidence_threshold = _read_float_setting("emotion_confidence_threshold", 0.60, 0.45, 0.95)
     sample_interval = _read_float_setting("emotion_sample_interval_seconds", 0.18, 0.08, 0.5)
+    sample_stride = _read_int_setting("emotion_process_every_nth_frame", 3, 1, 8)
+    inference_width = _read_int_setting("emotion_resize_width", 640, 320, 1280)
+    min_sample_confidence = _read_float_setting(
+        "emotion_min_sample_confidence",
+        max(0.45, confidence_threshold - 0.08),
+        0.35,
+        0.9,
+    )
     autoplay_enabled = _setting_bool("emotion_auto_play_enabled", True)
-    deadline = time.time() + max(5.0, min(30.0, sample_target * sample_interval + 5.0))
+    deadline = time.time() + max(8.0, min(45.0, sample_target * sample_interval * sample_stride + 8.0))
 
     emotion_samples: list[str] = []
     confidence_samples: list[float] = []
     emotion_confidence_map: dict[str, list[float]] = {}
     sample_count = 0
+    processed_frame_count = 0
+    skipped_no_face = 0
+    skipped_low_confidence = 0
 
     _call_js(
         "setEmotionResult",
@@ -967,22 +993,81 @@ def _emotion_worker() -> None:
                 continue
             preview = cv2.flip(frame, 1)
             _call_js("updateCameraFrame", "emotion", _encode_frame(preview))
+            processed_frame_count += 1
+            if processed_frame_count % sample_stride != 0:
+                time.sleep(0.01)
+                continue
+
+            target_height = int(preview.shape[0] * inference_width / max(1, preview.shape[1]))
+            resized_for_inference = cv2.resize(preview, (inference_width, max(1, target_height)))
             emotion = "neutral"
             frame_confidence = 0.0
             engine = "none"
+            face_detected = False
             if DeepFace is not None:
                 try:
-                    analysis = DeepFace.analyze(preview, actions=["emotion"], enforce_detection=False, silent=True)
+                    analysis = DeepFace.analyze(
+                        resized_for_inference,
+                        actions=["emotion"],
+                        enforce_detection=False,
+                        detector_backend="opencv",
+                        silent=True,
+                    )
                     if isinstance(analysis, list):
                         analysis = analysis[0] if analysis else {}
                     emotion, frame_confidence = _emotion_confidence_from_analysis(analysis if isinstance(analysis, dict) else {})
+                    face_detected = _analysis_has_face(analysis if isinstance(analysis, dict) else None)
                     engine = "deepface"
                 except Exception:
                     emotion = "neutral"
                     frame_confidence = 0.0
             elif _emotion_face_mesh is not None:
-                emotion, frame_confidence = _analyze_emotion_with_mediapipe(preview)
+                emotion, frame_confidence = _analyze_emotion_with_mediapipe(resized_for_inference)
+                face_detected = frame_confidence > 0.0
                 engine = "mediapipe"
+
+            if not face_detected:
+                skipped_no_face += 1
+                _call_js(
+                    "setEmotionResult",
+                    {
+                        "ok": True,
+                        "stage": "analyzing",
+                        "engine": engine,
+                        "emotion": emotion,
+                        "smoothed_emotion": Counter(emotion_samples).most_common(1)[0][0] if emotion_samples else "neutral",
+                        "confidence": round(sum(confidence_samples) / len(confidence_samples), 3) if confidence_samples else 0.0,
+                        "frame_confidence": round(frame_confidence, 3),
+                        "sample_count": sample_count,
+                        "sample_target": sample_target,
+                        "message": "Face not detected clearly. Keep your face centered and well-lit.",
+                    },
+                )
+                time.sleep(sample_interval)
+                continue
+
+            if frame_confidence < min_sample_confidence:
+                skipped_low_confidence += 1
+                _call_js(
+                    "setEmotionResult",
+                    {
+                        "ok": True,
+                        "stage": "analyzing",
+                        "engine": engine,
+                        "emotion": emotion,
+                        "smoothed_emotion": Counter(emotion_samples).most_common(1)[0][0] if emotion_samples else "neutral",
+                        "confidence": round(sum(confidence_samples) / len(confidence_samples), 3) if confidence_samples else 0.0,
+                        "frame_confidence": round(frame_confidence, 3),
+                        "sample_count": sample_count,
+                        "sample_target": sample_target,
+                        "message": (
+                            f"Low confidence frame skipped ({frame_confidence:.0%}). "
+                            f"Need >= {min_sample_confidence:.0%} for sampling."
+                        ),
+                    },
+                )
+                time.sleep(sample_interval)
+                continue
 
             sample_count += 1
             emotion_samples.append(emotion)
@@ -997,7 +1082,7 @@ def _emotion_worker() -> None:
 
             status_message = (
                 f"Analyzing expression... {most_common_emotion.title()} detected. "
-                f"Sample {sample_count}/{sample_target}"
+                f"Captured sample {sample_count}/{sample_target}"
             )
             _call_js(
                 "setEmotionResult",
@@ -1018,7 +1103,16 @@ def _emotion_worker() -> None:
             time.sleep(sample_interval)
 
         if sample_count == 0:
-            _call_js("setEmotionResult", {"ok": False, "message": "No camera frames captured."})
+            _call_js(
+                "setEmotionResult",
+                {
+                    "ok": False,
+                    "message": (
+                        "No valid face samples were captured. "
+                        f"No-face skips: {skipped_no_face}, low-confidence skips: {skipped_low_confidence}."
+                    ),
+                },
+            )
             return
 
         emotion_counts = Counter(emotion_samples)
@@ -1079,6 +1173,9 @@ def _emotion_worker() -> None:
                 "sample_count": sample_count,
                 "sample_target": sample_target,
                 "query": query,
+                "min_sample_confidence": round(min_sample_confidence, 3),
+                "skipped_no_face": skipped_no_face,
+                "skipped_low_confidence": skipped_low_confidence,
                 "spotify": play_result,
                 "message": message,
             },
@@ -1187,6 +1284,7 @@ def startBabyMonitoring() -> dict[str, Any]:
 
 @eel.expose
 def startEmotionMonitoring() -> dict[str, Any]:
+    global _emotion_monitor_thread
     if _emotion_running.is_set():
         return {"ok": False, "message": "Emotion analysis is already running."}
 
@@ -1207,7 +1305,12 @@ def startEmotionMonitoring() -> dict[str, Any]:
         return {"ok": False, "message": message}
 
     _emotion_monitor_running.set()
-    threading.Thread(target=_camera_stream_worker, args=("emotion", _emotion_monitor_running), daemon=True).start()
+    _emotion_monitor_thread = threading.Thread(
+        target=_camera_stream_worker,
+        args=("emotion", _emotion_monitor_running),
+        daemon=True,
+    )
+    _emotion_monitor_thread.start()
     _call_js(
         "setEmotionResult",
         {
@@ -1226,7 +1329,11 @@ def startEmotionMonitoring() -> dict[str, Any]:
 
 @eel.expose
 def stopEmotionMonitoring() -> dict[str, Any]:
+    global _emotion_monitor_thread
     _emotion_monitor_running.clear()
+    if _emotion_monitor_thread and _emotion_monitor_thread.is_alive():
+        _emotion_monitor_thread.join(timeout=0.4)
+    _emotion_monitor_thread = None
     if _emotion_running.is_set():
         return {"ok": False, "message": "Emotion analysis is running. Please wait for completion."}
 
@@ -1249,11 +1356,15 @@ def stopEmotionMonitoring() -> dict[str, Any]:
 
 @eel.expose
 def stopCamera() -> dict[str, Any]:
+    global _emotion_monitor_thread
     _release_camera("baby-monitor")
     _release_camera("emotion")
     _release_camera("face-auth")
     _baby_monitor_running.clear()
     _emotion_monitor_running.clear()
+    if _emotion_monitor_thread and _emotion_monitor_thread.is_alive():
+        _emotion_monitor_thread.join(timeout=0.4)
+    _emotion_monitor_thread = None
     return {"ok": True, "message": "Camera stopped."}
 
 
@@ -1282,6 +1393,7 @@ def getBabyMonitorRegion() -> dict[str, Any]:
 
 @eel.expose
 def startEmotionDetection() -> dict[str, Any]:
+    global _emotion_monitor_thread
     if _emotion_running.is_set():
         return {"ok": False, "message": "Emotion detection already running."}
 
@@ -1292,7 +1404,9 @@ def startEmotionDetection() -> dict[str, Any]:
 
     if _emotion_monitor_running.is_set():
         _emotion_monitor_running.clear()
-        time.sleep(0.08)
+        if _emotion_monitor_thread and _emotion_monitor_thread.is_alive():
+            _emotion_monitor_thread.join(timeout=0.4)
+        _emotion_monitor_thread = None
 
     threading.Thread(target=_emotion_worker, daemon=True).start()
     return {"ok": True, "message": "Emotion detection started."}
