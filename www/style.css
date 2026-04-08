@@ -554,18 +554,18 @@ button {
 }
 
 .emotion-info-section {
-  flex: 0 0 clamp(220px, 25vw, 280px);
+  flex: 0 0 clamp(200px, 23vw, 250px);
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   gap: clamp(8px, 1vw, 10px);
-  overflow: hidden;
+  overflow: visible;
   padding: clamp(8px, 1.2vw, 10px);
 }
 
 .app-pane#appEmotion {
-  overflow: hidden;
-  padding-bottom: clamp(8px, 1.2vw, 10px);
+  overflow-y: auto;
+  padding-bottom: clamp(108px, 12vh, 132px);
 }
 
 .app-pane#appEmotion > h4 {
@@ -580,7 +580,7 @@ button {
 }
 
 .app-pane#appEmotion .emotion-camera-section {
-  min-height: clamp(220px, 34vh, 330px);
+  min-height: clamp(190px, 30vh, 270px);
 }
 
 .app-pane#appEmotion .emotion-info-section {
@@ -588,7 +588,7 @@ button {
 }
 
 .emotion-controls-section {
-  margin-top: auto;
+  margin-top: clamp(8px, 1vw, 10px);
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
