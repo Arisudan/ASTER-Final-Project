@@ -156,7 +156,7 @@ function setHotwordOverlayState(isActive, hotword = "jarvis") {
     overlay.classList.remove("hidden");
     overlay.setAttribute("aria-hidden", "false");
     if (label) {
-      label.textContent = `${String(hotword || "jarvis").toUpperCase()} ready`;
+      label.textContent = "ASTER ready";
     }
     if (query) {
       query.textContent = "Say your command";
