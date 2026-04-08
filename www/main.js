@@ -46,6 +46,15 @@ const assistantWave = {
   mode: "idle",
 };
 
+function setSiriWaveVisualMode(mode) {
+  const wave = byId("siriWave");
+  if (!wave) {
+    return;
+  }
+  wave.classList.remove("is-idle", "is-listening", "is-processing");
+  wave.classList.add(`is-${mode}`);
+}
+
 function byId(id) {
   return document.getElementById(id);
 }
@@ -93,10 +102,11 @@ function ensureSiriWave() {
       height: 200,
       style: "ios9",
       autostart: true,
-      speed: 0.08,
-      amplitude: 0.08,
+      speed: 0.09,
+      amplitude: 0.09,
     });
     assistantWave.initialized = true;
+    setSiriWaveVisualMode("idle");
   } catch (error) {
     assistantWave.instance = null;
     assistantWave.initialized = false;
@@ -110,15 +120,17 @@ function applySiriWaveMode(mode) {
   }
 
   if (mode === "listening") {
-    assistantWave.instance.setSpeed(0.14);
-    assistantWave.instance.setAmplitude(1.0);
+    assistantWave.instance.setSpeed(0.16);
+    assistantWave.instance.setAmplitude(1.12);
   } else if (mode === "processing") {
-    assistantWave.instance.setSpeed(0.1);
-    assistantWave.instance.setAmplitude(0.45);
+    assistantWave.instance.setSpeed(0.11);
+    assistantWave.instance.setAmplitude(0.52);
   } else {
-    assistantWave.instance.setSpeed(0.08);
-    assistantWave.instance.setAmplitude(0.08);
+    assistantWave.instance.setSpeed(0.09);
+    assistantWave.instance.setAmplitude(0.1);
   }
+  assistantWave.mode = mode;
+  setSiriWaveVisualMode(mode);
 }
 
 function startWaveMeter() {
