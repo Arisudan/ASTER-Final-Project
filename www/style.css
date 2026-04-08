@@ -557,9 +557,43 @@ button {
   flex: 0 0 clamp(220px, 25vw, 280px);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  overflow-y: auto;
+  justify-content: flex-start;
+  gap: clamp(8px, 1vw, 10px);
+  overflow: hidden;
   padding: clamp(8px, 1.2vw, 10px);
+}
+
+.app-pane#appEmotion {
+  overflow: hidden;
+  padding-bottom: clamp(8px, 1.2vw, 10px);
+}
+
+.app-pane#appEmotion > h4 {
+  margin: 0;
+}
+
+.app-pane#appEmotion .emotion-container {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: clamp(12px, 1.6vw, 16px);
+  align-items: stretch;
+}
+
+.app-pane#appEmotion .emotion-camera-section {
+  min-height: clamp(220px, 34vh, 330px);
+}
+
+.app-pane#appEmotion .emotion-info-section {
+  min-height: 0;
+}
+
+.emotion-controls-section {
+  margin-top: auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.emotion-controls-section #startEmotionBtn {
+  grid-column: 1 / -1;
 }
 
 .camera-frame--emotion {
@@ -1283,16 +1317,33 @@ select {
     grid-template-columns: 1fr;
   }
 
-  .emotion-container {
+  .emotion-container,
+  .app-pane#appEmotion .emotion-container {
     flex-direction: column;
+    display: flex;
   }
 
-  .emotion-camera-section {
+  .emotion-camera-section,
+  .app-pane#appEmotion .emotion-camera-section {
     min-height: 240px;
   }
 
-  .emotion-info-section {
+  .emotion-info-section,
+  .app-pane#appEmotion .emotion-info-section {
     flex: 0 0 auto;
+    overflow: visible;
+  }
+
+  .app-pane#appEmotion {
+    overflow-y: auto;
+  }
+
+  .emotion-controls-section {
+    grid-template-columns: 1fr;
+  }
+
+  .emotion-controls-section #startEmotionBtn {
+    grid-column: auto;
   }
 }
 

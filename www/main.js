@@ -859,8 +859,8 @@ function updateSettingsInputs(settings) {
   setVal("wakeWordEnabledInput", data.wake_word_enabled || "true");
   setVal("speechRateInput", data.speech_rate || 180);
   setVal("emotionAutoPlayEnabledInput", data.emotion_auto_play_enabled || "true");
-  setVal("emotionConfidenceThresholdInput", data.emotion_confidence_threshold || 0.6);
-  setVal("emotionSampleCountInput", data.emotion_sample_count || 12);
+  setVal("emotionConfidenceThresholdInput", data.emotion_confidence_threshold || 0.55);
+  setVal("emotionSampleCountInput", data.emotion_sample_count || 10);
   setVal("emotionSampleIntervalInput", data.emotion_sample_interval_seconds || 0.18);
   setVal("spotifyAutoConnectInput", data.spotify_auto_connect || "false");
   setVal("androidSerialInput", data.android_device_serial || "");
@@ -1381,8 +1381,8 @@ function bindUI() {
       wake_word_enabled: byId("wakeWordEnabledInput")?.value || "true",
       speech_rate: byId("speechRateInput")?.value || "180",
       emotion_auto_play_enabled: byId("emotionAutoPlayEnabledInput")?.value || "true",
-      emotion_confidence_threshold: byId("emotionConfidenceThresholdInput")?.value || "0.60",
-      emotion_sample_count: byId("emotionSampleCountInput")?.value || "12",
+      emotion_confidence_threshold: byId("emotionConfidenceThresholdInput")?.value || "0.55",
+      emotion_sample_count: byId("emotionSampleCountInput")?.value || "10",
       emotion_sample_interval_seconds: byId("emotionSampleIntervalInput")?.value || "0.18",
       spotify_auto_connect: byId("spotifyAutoConnectInput")?.value || "false",
       android_device_serial: byId("androidSerialInput")?.value || "",

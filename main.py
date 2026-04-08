@@ -934,14 +934,14 @@ def _emotion_worker() -> None:
         _emotion_running.clear()
         return
 
-    sample_target = _read_int_setting("emotion_sample_count", 12, 6, 24)
-    confidence_threshold = _read_float_setting("emotion_confidence_threshold", 0.60, 0.45, 0.95)
+    sample_target = _read_int_setting("emotion_sample_count", 10, 6, 24)
+    confidence_threshold = _read_float_setting("emotion_confidence_threshold", 0.55, 0.45, 0.95)
     sample_interval = _read_float_setting("emotion_sample_interval_seconds", 0.18, 0.08, 0.5)
     sample_stride = _read_int_setting("emotion_process_every_nth_frame", 3, 1, 8)
     inference_width = _read_int_setting("emotion_resize_width", 640, 320, 1280)
     min_sample_confidence = _read_float_setting(
         "emotion_min_sample_confidence",
-        max(0.45, confidence_threshold - 0.08),
+        max(0.55, confidence_threshold),
         0.35,
         0.9,
     )
