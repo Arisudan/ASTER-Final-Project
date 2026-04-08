@@ -41,11 +41,9 @@ const state = {
 };
 
 const assistantWave = {
-  stream: null,
-  audioContext: null,
-  analyser: null,
-  sourceNode: null,
-  rafId: 0,
+  instance: null,
+  initialized: false,
+  mode: "idle",
 };
 
 function byId(id) {
@@ -73,71 +71,62 @@ function setAssistantHeardQuery(text) {
   }
 }
 
-async function startWaveMeter() {
-  const wave = byId("siriWave");
-  if (!wave || assistantWave.stream) {
+function ensureSiriWave() {
+  if (assistantWave.initialized) {
     return;
   }
 
-  const bars = Array.from(wave.querySelectorAll(".siri-bar"));
-  if (!bars.length || !navigator.mediaDevices?.getUserMedia) {
+  const container = byId("siriWave");
+  if (!container) {
+    return;
+  }
+
+  const SiriWaveCtor = window.SiriWave;
+  if (typeof SiriWaveCtor !== "function") {
     return;
   }
 
   try {
-    assistantWave.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    assistantWave.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    assistantWave.analyser = assistantWave.audioContext.createAnalyser();
-    assistantWave.analyser.fftSize = 256;
-    assistantWave.sourceNode = assistantWave.audioContext.createMediaStreamSource(assistantWave.stream);
-    assistantWave.sourceNode.connect(assistantWave.analyser);
-
-    const frequencyData = new Uint8Array(assistantWave.analyser.frequencyBinCount);
-    const animate = () => {
-      if (!assistantWave.analyser) {
-        return;
-      }
-
-      assistantWave.analyser.getByteFrequencyData(frequencyData);
-      const avg = frequencyData.reduce((sum, value) => sum + value, 0) / Math.max(1, frequencyData.length);
-      const normalized = Math.max(0.18, Math.min(1.25, avg / 92));
-
-      bars.forEach((bar, index) => {
-        const factor = 0.65 + ((index % 5) * 0.1);
-        const jitter = 0.8 + Math.random() * 0.5;
-        bar.style.transform = `scaleY(${Math.max(0.25, normalized * factor * jitter).toFixed(3)})`;
-      });
-
-      assistantWave.rafId = window.requestAnimationFrame(animate);
-    };
-
-    animate();
+    assistantWave.instance = new SiriWaveCtor({
+      container,
+      width: 640,
+      height: 200,
+      style: "ios9",
+      autostart: true,
+      speed: 0.08,
+      amplitude: 0.08,
+    });
+    assistantWave.initialized = true;
   } catch (error) {
-    // If microphone permission is denied, keep CSS-only animation.
+    assistantWave.instance = null;
+    assistantWave.initialized = false;
   }
 }
 
+function applySiriWaveMode(mode) {
+  ensureSiriWave();
+  if (!assistantWave.instance) {
+    return;
+  }
+
+  if (mode === "listening") {
+    assistantWave.instance.setSpeed(0.14);
+    assistantWave.instance.setAmplitude(1.0);
+  } else if (mode === "processing") {
+    assistantWave.instance.setSpeed(0.1);
+    assistantWave.instance.setAmplitude(0.45);
+  } else {
+    assistantWave.instance.setSpeed(0.08);
+    assistantWave.instance.setAmplitude(0.08);
+  }
+}
+
+function startWaveMeter() {
+  applySiriWaveMode("listening");
+}
+
 function stopWaveMeter() {
-  if (assistantWave.rafId) {
-    window.cancelAnimationFrame(assistantWave.rafId);
-    assistantWave.rafId = 0;
-  }
-  if (assistantWave.sourceNode) {
-    assistantWave.sourceNode.disconnect();
-    assistantWave.sourceNode = null;
-  }
-  if (assistantWave.analyser) {
-    assistantWave.analyser.disconnect();
-    assistantWave.analyser = null;
-  }
-  if (assistantWave.audioContext) {
-    assistantWave.audioContext.close().catch(() => undefined);
-    assistantWave.audioContext = null;
-  }
-  if (assistantWave.stream) {
-    assistantWave.stream.getTracks().forEach((track) => track.stop());
-    assistantWave.stream = null;
-  }
+  applySiriWaveMode("idle");
 }
 
 function setAssistantListeningState(mode) {
@@ -146,12 +135,12 @@ function setAssistantListeningState(mode) {
     return;
   }
 
-  wave.classList.remove("is-listening", "is-processing");
   if (mode === "listening") {
-    wave.classList.add("is-listening");
     startWaveMeter();
   } else if (mode === "processing") {
-    wave.classList.add("is-processing");
+    applySiriWaveMode("processing");
+  } else {
+    stopWaveMeter();
   }
 }
 

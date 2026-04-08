@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="style.css" />
   <script type="text/javascript" src="/eel.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/siriwave/dist/siriwave.umd.min.js"></script>
   <script defer src="main.js"></script>
 </head>
 <body data-mode="driving">
@@ -108,20 +109,7 @@
           <div id="hotwordOverlay" class="hotword-overlay hidden" aria-hidden="true">
             <div class="hotword-overlay__content">
               <p class="hotword-label" id="hotwordLabel">Listening...</p>
-              <div class="siri-wave" id="siriWave" aria-hidden="true">
-                <span class="siri-bar"></span>
-                <span class="siri-bar"></span>
-                <span class="siri-bar"></span>
-                <span class="siri-bar"></span>
-                <span class="siri-bar"></span>
-                <span class="siri-bar"></span>
-                <span class="siri-bar"></span>
-                <span class="siri-bar"></span>
-                <span class="siri-bar"></span>
-                <span class="siri-bar"></span>
-                <span class="siri-bar"></span>
-                <span class="siri-bar"></span>
-              </div>
+              <div id="siriWave" class="siri-wave" aria-hidden="true"></div>
               <p class="hotword-query" id="hotwordQuery">Say your command</p>
             </div>
           </div>

@@ -2587,31 +2587,14 @@ select {
   width: min(90vw, 760px);
   height: clamp(140px, 23vw, 190px);
   border-radius: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(6px, 1vw, 10px);
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 50%, rgba(25, 65, 201, 0.18), rgba(4, 10, 30, 0.2));
 }
 
-.siri-bar {
-  width: clamp(6px, 0.7vw, 8px);
-  height: 22%;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #57f1e0, #3f79ff 52%, #8d62ff);
-  box-shadow: 0 0 18px rgba(78, 118, 255, 0.5);
-  transform-origin: center;
-  animation: siriIdle 1.8s ease-in-out infinite;
-  animation-delay: calc(var(--bar-index, 0) * 70ms);
-}
-
-.siri-wave.is-listening .siri-bar {
-  animation-name: siriListening;
-  animation-duration: 0.95s;
-}
-
-.siri-wave.is-processing .siri-bar {
-  animation-name: siriProcessing;
-  animation-duration: 1.25s;
+.siri-wave canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
 }
 
 .hotword-query {
@@ -2656,50 +2639,6 @@ select {
   }
 }
 
-@keyframes jarvisRotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes jarvisPulse {
-  0%,
-  100% {
-    transform: scale(1);
-    filter: blur(3px);
-  }
-  50% {
-    transform: scale(1.03);
-    filter: blur(2px);
-  }
-}
-
-@keyframes jarvisParticleDrift {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(0.9);
-    opacity: 0.45;
-  }
-  50% {
-    transform: translate3d(var(--drift-x, 8px), var(--drift-y, -8px), 0) scale(1.15);
-    opacity: 1;
-  }
-}
-
-.metric-item:hover {
-  background: rgba(47, 211, 197, 0.12);
-  border-color: rgba(110, 240, 196, 0.4);
-  box-shadow: 0 0 20px rgba(110, 240, 196, 0.15);
-  transform: translateY(-2px);
-}
-
-.metric-icon {
-  font-size: clamp(1.4rem, 3vw, 2rem);
-  line-height: 1;
-  opacity: 0.9;
 }
 
 .metric-icon.rpm {
