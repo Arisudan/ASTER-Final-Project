@@ -195,21 +195,17 @@ button {
   height: clamp(148px, 22vw, 220px);
   position: relative;
   transform: scale(0.85);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.logo-triangle {
-  position: absolute;
-  inset: 0;
-  clip-path: polygon(50% 6%, 8% 92%, 92% 92%);
-}
-
-.logo-triangle--outer {
-  background: linear-gradient(145deg, #fff 0%, #b9bcc7 48%, #6f7689 100%);
-}
-
-.logo-triangle--inner {
-  inset: 26%;
-  background: linear-gradient(145deg, #fdeab0 0%, #d4af37 58%, #9f7c16 100%);
+.startup-logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 14px 36px rgba(0, 0, 0, 0.45));
 }
 
 .startup-wordmark {
