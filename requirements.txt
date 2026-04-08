@@ -5,11 +5,13 @@ face_recognition
 pyttsx3
 SpeechRecognition
 pyaudio
+pocketsphinx
 playsound==1.2.2
 openai
 requests
 pvporcupine
 pygame
 deepface
+mediapipe
 ultralytics
 spotipy

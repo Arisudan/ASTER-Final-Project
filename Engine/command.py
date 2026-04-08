@@ -13,7 +13,7 @@ import eel
 import requests
 
 from Engine import db
-from Engine.Features import control_android_media, list_android_devices, open_android_app, send_sms, speak, takecommand as feature_takecommand
+from Engine.Features import call_android_contact, call_android_number, control_android_media, list_android_devices, open_android_app, send_sms, speak, takecommand as feature_takecommand
 from Engine.ai_memory import generate_response
 from Engine.spotify_backend import next_track as spotify_next_track
 from Engine.spotify_backend import pause_music as spotify_pause_music
@@ -45,6 +45,22 @@ def _play_first_music_track():
         except Exception:
             continue
     return "No music library found."
+
+
+def _open_notepad():
+    try:
+        os.system("start notepad")
+        return "Opening notepad."
+    except Exception:
+        return "Unable to open notepad."
+
+
+def _open_windows_settings():
+    try:
+        os.system("start ms-settings:")
+        return "Opening settings."
+    except Exception:
+        return "Unable to open settings."
 
 
 def _play_spotify_or_local(query: str | None = None):
@@ -129,6 +145,12 @@ def allCommands(query, source="voice"):
         elif "open google" in query_text or query_text == "google":
             webbrowser.open("https://www.google.com")
             response = "Opening Google."
+
+        elif "open notepad" in query_text or query_text == "notepad":
+            response = _open_notepad()
+
+        elif "open settings" in query_text or query_text == "settings":
+            response = _open_windows_settings()
 
         elif "open maps" in query_text or "maps" in query_text:
             webbrowser.open("https://www.google.com/maps")
@@ -229,8 +251,13 @@ def allCommands(query, source="voice"):
             os.system("shutdown /s /t 0")
             return response
 
-        elif "call" in query_text:
-            response = "Calling via ADB is not yet configured."
+        elif query_text.startswith("call "):
+            target = query_text.replace("call ", "", 1).strip()
+            number = "".join(ch for ch in target if ch.isdigit() or ch == "+")
+            if number:
+                response = call_android_number(number)
+            else:
+                response = call_android_contact(target)
 
         else:
             response = generate_response(query_text)

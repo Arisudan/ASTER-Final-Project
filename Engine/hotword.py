@@ -19,6 +19,8 @@ except Exception:
 
 from Engine import db
 
+WAKE_WORDS = ("jarvis", "aster", "alexa")
+
 
 def _fallback_hotword_loop(wake_queue):
     recognizer = sr.Recognizer()
@@ -29,8 +31,9 @@ def _fallback_hotword_loop(wake_queue):
                 recognizer.adjust_for_ambient_noise(source, duration=0.2)
                 audio = recognizer.listen(source, timeout=1, phrase_time_limit=3)
             phrase = recognizer.recognize_google(audio).lower().strip()
-            if "jarvis" in phrase:
-                wake_queue.put({"type": "wake", "source": "fallback"})
+            matched_word = next((word for word in WAKE_WORDS if word in phrase), "")
+            if matched_word:
+                wake_queue.put({"type": "wake", "source": "fallback", "hotword": matched_word})
         except sr.WaitTimeoutError:
             continue
         except sr.UnknownValueError:
@@ -49,10 +52,13 @@ def _porcupine_hotword_loop(wake_queue):
         return _fallback_hotword_loop(wake_queue)
 
     if not keyword_paths:
-        keyword_paths = []
+        # Use speech fallback to reliably support custom wake words such as "aster".
+        return _fallback_hotword_loop(wake_queue)
+
+    keywords = ["jarvis", "alexa"] if not keyword_paths else None
 
     try:
-        porcupine = pvporcupine.create(access_key=access_key, keywords=["jarvis"] if not keyword_paths else None, keyword_paths=keyword_paths or None)
+        porcupine = pvporcupine.create(access_key=access_key, keywords=keywords, keyword_paths=keyword_paths or None)
     except Exception:
         return _fallback_hotword_loop(wake_queue)
 
@@ -76,7 +82,15 @@ def _porcupine_hotword_loop(wake_queue):
             audio_buffer = struct.unpack_from("h" * porcupine.frame_length, pcm)
             keyword_index = porcupine.process(audio_buffer)
             if keyword_index >= 0:
-                wake_queue.put({"type": "wake", "source": "porcupine"})
+                matched_word = "jarvis"
+                if keyword_paths:
+                    try:
+                        matched_word = os.path.splitext(os.path.basename(keyword_paths[keyword_index]))[0].lower()
+                    except Exception:
+                        matched_word = "jarvis"
+                elif keywords and 0 <= keyword_index < len(keywords):
+                    matched_word = keywords[keyword_index]
+                wake_queue.put({"type": "wake", "source": "porcupine", "hotword": matched_word})
     finally:
         try:
             stream.close()

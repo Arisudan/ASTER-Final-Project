@@ -315,53 +315,57 @@ button {
   display: flex;
   flex-direction: column;
   height: 100%;
-  gap: clamp(16px, 2vw, 20px);
-  padding-bottom: clamp(20px, 2vw, 24px);
+  gap: clamp(12px, 1.6vw, 16px);
+  padding: clamp(2px, 0.4vw, 4px) 0 clamp(8px, 1vw, 12px);
 }
 
 .baby-monitor-header {
-  text-align: center;
+  text-align: left;
+  padding: 0 clamp(2px, 0.4vw, 4px);
 }
 
 .baby-monitor-header h2 {
-  margin: 0 0 8px 0;
-  font-size: clamp(1.4rem, 3vw, 1.8rem);
+  margin: 0 0 4px 0;
+  font-size: clamp(1.2rem, 2.4vw, 1.55rem);
   font-weight: 800;
   color: #fff;
+  letter-spacing: 0.01em;
 }
 
 .baby-monitor-subtitle {
   margin: 0;
-  font-size: clamp(0.9rem, 1.8vw, 1rem);
-  color: #b3b3b3;
+  font-size: clamp(0.78rem, 1.4vw, 0.9rem);
+  color: rgba(220, 229, 255, 0.72);
   font-weight: 500;
 }
 
 .baby-monitor-main {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(16px, 2vw, 24px);
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+  gap: clamp(12px, 1.4vw, 16px);
   flex: 1;
   min-height: 0;
+  align-items: stretch;
 }
 
 .camera-display-wrapper {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: flex-start;
   min-height: 0;
 }
 
 .camera-frame--baby {
+  position: relative;
   width: 100%;
-  height: 100%;
-  aspect-ratio: 4/3;
-  border-radius: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.6) 100%);
+  height: clamp(420px, 62vh, 680px);
+  aspect-ratio: auto;
+  border-radius: 14px;
+  border: 1px solid rgba(133, 203, 255, 0.32);
+  background: radial-gradient(circle at 20% 10%, rgba(57, 98, 170, 0.22), rgba(8, 14, 34, 0.88));
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.34), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(8px);
 }
 
@@ -372,24 +376,50 @@ button {
   background: #000;
 }
 
+.region-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.camera-frame--baby.region-selection-active .region-overlay {
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+.region-overlay__poly {
+  fill: rgba(55, 162, 255, 0.18);
+  stroke: rgba(55, 178, 255, 0.96);
+  stroke-width: 0.8;
+}
+
+.region-overlay__point {
+  fill: #43c4ff;
+  stroke: rgba(0, 0, 0, 0.75);
+  stroke-width: 0.35;
+}
+
 .baby-monitor-info-panel {
   display: flex;
   flex-direction: column;
-  gap: clamp(16px, 2vw, 24px);
+  gap: clamp(12px, 1.4vw, 14px);
   min-height: 0;
 }
 
 .monitor-status-section h3 {
-  margin: 0 0 12px 0;
-  font-size: clamp(1rem, 2vw, 1.2rem);
+  margin: 0 0 8px 0;
+  font-size: clamp(0.94rem, 1.6vw, 1.08rem);
   font-weight: 700;
-  color: #fff;
+  color: rgba(240, 246, 255, 0.94);
+  letter-spacing: 0.02em;
 }
 
 .monitor-status-cards {
   display: flex;
   flex-direction: column;
-  gap: clamp(10px, 1.4vw, 12px);
+  gap: clamp(8px, 1vw, 10px);
 }
 
 .status-card {
@@ -397,58 +427,64 @@ button {
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: 12px;
-  padding: clamp(14px, 1.8vw, 18px);
+  padding: clamp(10px, 1.2vw, 12px) clamp(12px, 1.4vw, 14px);
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(107, 159, 244, 0.25);
+  background: linear-gradient(135deg, rgba(36, 56, 105, 0.24), rgba(20, 34, 74, 0.46));
   backdrop-filter: blur(8px);
   transition: all 0.3s ease;
 }
 
 .status-card:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, rgba(47, 76, 138, 0.34), rgba(24, 42, 92, 0.56));
+  border-color: rgba(132, 190, 255, 0.4);
 }
 
 .status-label {
-  font-size: clamp(0.85rem, 1.8vw, 0.95rem);
-  color: #b3b3b3;
-  font-weight: 500;
+  font-size: clamp(0.78rem, 1.35vw, 0.88rem);
+  color: rgba(205, 218, 255, 0.84);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .status-value {
-  font-size: clamp(0.95rem, 2vw, 1.1rem);
+  font-size: clamp(0.82rem, 1.45vw, 0.92rem);
   color: #fff;
-  font-weight: 700;
-  padding: 6px 12px;
-  border-radius: 8px;
-  background: rgba(100, 100, 100, 0.3);
-  min-width: 60px;
+  font-weight: 800;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(99, 125, 173, 0.45);
+  border: 1px solid rgba(167, 189, 230, 0.36);
+  min-width: 82px;
   text-align: center;
 }
 
 .status-card.monitor-badge--active .status-value {
-  background: rgba(29, 185, 84, 0.4);
-  color: #1db954;
+  background: rgba(22, 148, 85, 0.26);
+  border-color: rgba(74, 243, 159, 0.5);
+  color: #67ffb6;
 }
 
 .status-card.monitor-badge--alert .status-value {
-  background: rgba(255, 92, 92, 0.4);
-  color: #ff5c5c;
+  background: rgba(190, 51, 76, 0.28);
+  border-color: rgba(255, 110, 136, 0.58);
+  color: #ff8ea7;
 }
 
 .monitor-controls-section {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: clamp(10px, 1.4vw, 14px);
-  margin-top: auto;
+  gap: clamp(8px, 1vw, 10px);
+  margin-top: 2px;
 }
 
 .monitor-controls-section button {
-  padding: clamp(12px, 1.6vw, 16px) clamp(14px, 2vw, 18px);
-  font-size: clamp(0.85rem, 1.8vw, 0.95rem);
+  padding: clamp(10px, 1.2vw, 12px) clamp(12px, 1.5vw, 14px);
+  font-size: clamp(0.78rem, 1.35vw, 0.88rem);
   border-radius: 10px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.01em;
   transition: all 0.3s ease;
   cursor: pointer;
 }
@@ -948,18 +984,127 @@ select {
 }
 
 .settings-block {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  padding: clamp(10px, 1.4vw, 12px);
-  margin-bottom: clamp(8px, 1.2vw, 10px);
-  background: rgba(255, 255, 255, 0.04);
+  position: relative;
+  border: 1px solid rgba(99, 131, 190, 0.18);
+  border-radius: 18px;
+  padding: clamp(14px, 1.8vw, 18px);
+  margin-bottom: clamp(10px, 1.4vw, 14px);
+  background:
+    linear-gradient(180deg, rgba(10, 18, 36, 0.94), rgba(8, 13, 23, 0.96)),
+    rgba(255, 255, 255, 0.04);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 12px 26px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.settings-block::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.95), rgba(73, 132, 255, 0.85));
+}
+
+.app-pane#appSettings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(12px, 1.5vw, 16px);
+  align-content: start;
+  padding-bottom: clamp(126px, 14vw, 160px);
+}
+
+.app-pane#appSettings > h4 {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0 2px;
+  font-size: clamp(1.15rem, 2.4vw, 1.5rem);
+  letter-spacing: 0.02em;
 }
 
 .settings-block h5 {
-  margin: 0 0 10px 0;
-  font-size: clamp(0.85rem, 2vw, 0.95rem);
-  color: var(--gold-soft);
+  margin: 0 0 12px 0;
+  font-size: clamp(0.86rem, 1.5vw, 0.98rem);
+  color: #f0dc8f;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.settings-block .settings-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.7fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.settings-block .settings-row:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.settings-block .settings-row label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(223, 231, 248, 0.92);
+  letter-spacing: 0.02em;
+}
+
+.settings-block .settings-row input,
+.settings-block .settings-row select {
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(127, 154, 209, 0.22);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-main);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+.settings-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.settings-actions .btn {
+  min-width: 160px;
+}
+
+.settings-block--commands {
+  grid-column: 1 / -1;
+}
+
+.voice-commands-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.voice-command-row {
+  border: 1px solid rgba(119, 151, 211, 0.2);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.voice-command-key {
+  color: #d8e7ff;
   font-weight: 700;
+  font-size: 0.88rem;
+  letter-spacing: 0.02em;
+}
+
+.voice-command-desc {
+  color: rgba(202, 216, 245, 0.84);
+  font-size: 0.8rem;
+  line-height: 1.35;
 }
 
 .large-controls .icon-btn {
@@ -972,11 +1117,11 @@ select {
   left: clamp(10px, 1.4vw, 14px);
   right: clamp(10px, 1.4vw, 14px);
   bottom: clamp(10px, 1.2vw, 16px);
-  height: 76px;
+  height: 82px;
   border-radius: 18px;
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
   padding: 8px;
   transition: opacity 0.3s ease, visibility 0.3s ease;
   background: rgba(20, 20, 20, 0.95);
@@ -992,12 +1137,35 @@ select {
 }
 
 .bottom-nav button {
-  border-radius: 12px;
+  border-radius: 14px;
   color: inherit;
-  background: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.bottom-nav .nav-apps-center {
+  width: clamp(58px, 7.2vw, 64px);
+  height: clamp(58px, 7.2vw, 64px);
+  justify-self: center;
+  align-self: center;
+  border-radius: 50%;
+  margin-top: -16px;
+  border: 1px solid rgba(114, 179, 255, 0.68);
+  background:
+    radial-gradient(circle at 30% 30%, rgba(115, 193, 255, 0.5), rgba(34, 92, 228, 0.94));
+  box-shadow:
+    0 0 0 5px rgba(15, 26, 53, 0.95),
+    0 10px 22px rgba(8, 44, 134, 0.48),
+    0 0 22px rgba(72, 149, 255, 0.58);
+}
+
+.bottom-nav .nav-apps-center svg {
+  width: 22px;
+  height: 22px;
+  fill: #f5fbff;
 }
 
 .bottom-nav button svg {
@@ -1037,9 +1205,11 @@ select {
   }
 
   .bottom-nav {
-    height: 96px;
-    grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(2, 1fr);
+    height: 80px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-rows: 1fr;
+    gap: 6px;
+    padding: 6px;
   }
 
   .auth-card {
@@ -1069,21 +1239,25 @@ select {
 @media (max-width: 980px) {
   .baby-monitor-main {
     grid-template-columns: 1fr;
-    gap: clamp(14px, 2vw, 18px);
+    gap: clamp(12px, 1.6vw, 14px);
   }
 
   .baby-monitor-info-panel {
-    gap: clamp(14px, 2vw, 18px);
+    gap: clamp(10px, 1.4vw, 12px);
   }
 
   .monitor-controls-section {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  .camera-frame--baby {
+    height: clamp(320px, 48vh, 460px);
+  }
 }
 
 @media (max-width: 760px) {
   .baby-monitor-container {
-    gap: clamp(12px, 1.6vw, 16px);
+    gap: 10px;
   }
 
   .baby-monitor-main {
@@ -1091,11 +1265,11 @@ select {
   }
 
   .camera-display-wrapper {
-    min-height: 280px;
+    min-height: 0;
   }
 
   .camera-frame--baby {
-    height: 280px;
+    height: clamp(260px, 42vh, 360px);
   }
 
   .monitor-controls-section {
@@ -2044,16 +2218,15 @@ select {
   }
 }
 
-/* Launcher-style dashboard matching automotive reference */
+/* Launcher-style dashboard matching Jarvis-style reference */
 .launcher-shell {
   width: 100%;
   height: 100%;
   padding: clamp(10px, 1.4vw, 20px);
   position: relative;
   background:
-    radial-gradient(circle at 12% 26%, rgba(170, 132, 68, 0.22), transparent 32%),
-    radial-gradient(circle at 84% 66%, rgba(22, 44, 92, 0.42), transparent 40%),
-    linear-gradient(180deg, #0d0f13 0%, #090b10 72%, #06070b 100%);
+    radial-gradient(circle at 50% 16%, rgba(42, 88, 205, 0.18), transparent 34%),
+    linear-gradient(180deg, #02050d 0%, #030913 58%, #010307 100%);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -2068,25 +2241,22 @@ select {
 }
 
 .launcher-shell::before {
-  left: -120px;
-  bottom: -140px;
-  width: 460px;
-  height: 460px;
+  inset: auto auto -32% -18%;
+  width: min(62vw, 620px);
+  height: min(62vw, 620px);
   border-radius: 50%;
-  border: 22px solid rgba(170, 182, 206, 0.18);
-  box-shadow:
-    inset 0 0 0 8px rgba(0, 0, 0, 0.22),
-    0 0 0 48px rgba(11, 14, 20, 0.44);
+  border: 26px solid rgba(234, 189, 84, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 .launcher-shell::after {
-  right: -140px;
-  top: 20px;
-  width: 520px;
-  height: 220px;
+  inset: 16% -22% auto auto;
+  width: min(74vw, 780px);
+  height: min(28vw, 280px);
   border-radius: 120px;
-  background: linear-gradient(125deg, rgba(64, 72, 86, 0.26), rgba(14, 18, 28, 0.06));
-  transform: rotate(-9deg);
+  border: 1px solid rgba(110, 156, 255, 0.1);
+  background: linear-gradient(132deg, rgba(46, 73, 141, 0.16), rgba(4, 10, 26, 0.01));
+  transform: rotate(-8deg);
 }
 
 .launcher-title {
@@ -2098,12 +2268,13 @@ select {
   flex: 1;
   min-height: 0;
   border-radius: 20px;
-  border: 2px solid rgba(214, 223, 255, 0.3);
+  border: 2px solid rgba(173, 195, 248, 0.34);
   background:
-    radial-gradient(circle at 48% 35%, rgba(32, 73, 180, 0.25), transparent 46%),
-    linear-gradient(180deg, #070f20 0%, #0a1632 55%, #060d19 100%);
+    radial-gradient(circle at 50% 26%, rgba(31, 72, 186, 0.38), transparent 36%),
+    radial-gradient(circle at 50% 78%, rgba(8, 19, 62, 0.52), transparent 52%),
+    linear-gradient(180deg, #020a1e 0%, #020615 52%, #01030b 100%);
   overflow: hidden;
-  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.45);
+  box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.66);
   z-index: 1;
   display: flex;
   flex-direction: column;
@@ -2134,7 +2305,7 @@ select {
 
 .tablet-date-month {
   font-family: "Montserrat", sans-serif;
-  font-size: clamp(1.15rem, 2.5vw, 2rem);
+  font-size: clamp(1rem, 2.2vw, 1.65rem);
   line-height: 1;
   font-weight: 700;
   color: #f4f7ff;
@@ -2156,189 +2327,313 @@ select {
 .tablet-stage {
   flex: 1;
   min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(70px, 130px) 1fr minmax(96px, 170px);
+  display: flex;
   align-items: center;
-  padding: 0 clamp(10px, 1.8vw, 24px);
-  gap: clamp(10px, 1.2vw, 18px);
+  justify-content: center;
+  padding: clamp(4px, 1vw, 12px) clamp(10px, 2vw, 20px);
 }
 
-.tablet-left-icons,
-.tablet-right-icons {
+.jarvis-hud {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  justify-content: center;
+  gap: clamp(10px, 1.8vw, 18px);
+  width: 100%;
+  max-width: 820px;
 }
 
-.mini-analog-clock {
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  border: 2px solid rgba(240, 246, 255, 0.48);
+.jarvis-orb {
+  width: clamp(260px, 34vw, 430px);
+  height: clamp(260px, 34vw, 430px);
   position: relative;
 }
 
-.mini-analog-clock::after {
+.jarvis-aura,
+.jarvis-ring,
+.jarvis-core {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.jarvis-aura {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(15, 38, 124, 0.25) 0%, rgba(17, 35, 108, 0.55) 48%, rgba(18, 44, 214, 0.62) 66%, rgba(22, 49, 255, 0.1) 75%, transparent 78%),
+    radial-gradient(circle at 50% 50%, rgba(20, 48, 255, 0.6), rgba(7, 20, 86, 0.2) 56%, transparent 72%);
+  filter: blur(3px);
+  animation: jarvisPulse 5s ease-in-out infinite;
+}
+
+.jarvis-ring {
+  inset: 10%;
+  border: 2px solid rgba(104, 167, 255, 0.12);
+  box-shadow:
+    0 0 30px rgba(31, 90, 255, 0.42),
+    inset 0 0 24px rgba(39, 108, 255, 0.24);
+  animation: jarvisRotate 18s linear infinite;
+}
+
+.jarvis-core {
+  inset: 22%;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(0, 18, 75, 0.82), rgba(0, 8, 32, 0.98));
+  overflow: hidden;
+  box-shadow:
+    inset 0 0 30px rgba(0, 94, 255, 0.2),
+    0 0 0 1px rgba(41, 112, 255, 0.18);
+}
+
+.jarvis-core::after {
   content: "";
   position: absolute;
-  width: 8px;
-  height: 8px;
+  inset: 7%;
   border-radius: 50%;
-  background: #f4f7ff;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  border: 1px solid rgba(74, 140, 255, 0.14);
+  filter: blur(0.2px);
 }
 
-.clock-hand {
+.jarvis-particle {
   position: absolute;
-  left: 50%;
-  bottom: 50%;
   width: 2px;
-  transform-origin: bottom center;
-  background: #f4f7ff;
+  height: 2px;
+  border-radius: 50%;
+  background: #0d67ff;
+  opacity: 0.88;
+  box-shadow: 0 0 8px rgba(13, 103, 255, 0.65);
+  animation: jarvisParticleDrift 5.2s ease-in-out infinite;
+  animation-delay: var(--particle-delay, 0s);
 }
 
-.clock-hand--hour {
-  height: 24px;
-  transform: translateX(-50%) rotate(35deg);
+.jarvis-prompt {
+  margin: 2px 0 0;
+  color: rgba(229, 238, 255, 0.82);
+  font-family: "Montserrat", sans-serif;
+  font-size: clamp(0.9rem, 1.4vw, 1.18rem);
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
 }
 
-.clock-hand--minute {
-  height: 34px;
-  transform: translateX(-50%) rotate(130deg);
+.jarvis-reply {
+  margin: 0;
+  min-height: 1.4em;
+  max-width: min(80vw, 720px);
+  text-align: center;
+  color: rgba(199, 217, 255, 0.86);
+  font-size: clamp(0.82rem, 1.25vw, 0.98rem);
+  line-height: 1.45;
 }
 
-.tablet-icon-btn {
-  width: 44px;
-  height: 44px;
-  border: 1px solid rgba(232, 239, 255, 0.16);
+.jarvis-chat-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: clamp(4px, 0.8vw, 10px);
+  padding: 0 clamp(12px, 2vw, 24px) clamp(16px, 2.3vw, 24px);
+}
+
+.jarvis-chat-bar {
+  width: 100%;
+  max-width: 690px;
+  height: clamp(56px, 7.2vw, 64px);
+  border-radius: 14px;
+  border: 1px solid rgba(81, 124, 246, 0.5);
+  background: linear-gradient(180deg, rgba(4, 8, 22, 0.92), rgba(2, 6, 16, 0.95));
+  box-shadow:
+    0 0 20px rgba(8, 50, 228, 0.44),
+    inset 0 0 0 1px rgba(109, 145, 251, 0.18);
+  display: flex;
+  align-items: center;
+  padding: 0 12px 0 18px;
+  gap: 8px;
+}
+
+.jarvis-chat-bar input {
+  flex: 1;
+  min-height: 44px;
+  border: none;
+  background: transparent;
+  color: rgba(241, 246, 255, 0.94);
+  font-size: clamp(1rem, 1.5vw, 1.12rem);
+  padding: 0;
+}
+
+.jarvis-chat-bar input::placeholder {
+  color: rgba(210, 221, 255, 0.5);
+}
+
+.jarvis-chat-bar input:focus {
+  outline: none;
+}
+
+.jarvis-chat-icon {
+  width: 36px;
+  height: 36px;
+  border: none;
   border-radius: 10px;
-  background: rgba(8, 14, 26, 0.58);
-  color: #f4f7ff;
+  background: transparent;
+  color: rgba(241, 246, 255, 0.96);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
 }
 
-.utility-svg {
-  width: 24px;
-  height: 24px;
-  fill: #f5f8ff;
+.jarvis-chat-icon:hover,
+.jarvis-chat-icon:focus-visible {
+  background: rgba(84, 122, 243, 0.2);
+  transform: translateY(-1px);
+  outline: none;
 }
 
-.tablet-center-speed {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex: 1;
-  min-height: 320px;
+.jarvis-chat-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
 }
 
-.automotive-dashboard {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(24px, 4vw, 40px);
-  width: 100%;
-  max-width: 620px;
-  align-items: center;
+.jarvis-chat-icon[data-nav="voice"] svg {
+  width: 19px;
+  height: 19px;
 }
 
-/* Primary Speedometer */
-.speedometer-primary {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.gauge-outer {
-  position: relative;
-  width: clamp(160px, 26vw, 280px);
-  height: clamp(160px, 26vw, 280px);
-  background: radial-gradient(circle at 35% 35%, rgba(110, 240, 196, 0.08), rgba(47, 211, 197, 0.04));
-  border-radius: 50%;
-  border: 2px solid rgba(244, 247, 255, 0.12);
-  box-shadow: 
-    inset 0 0 32px rgba(244, 247, 255, 0.05),
-    0 0 32px rgba(110, 240, 196, 0.15);
-  padding: 12px;
-}
-
-.gauge-svg {
-  width: 100%;
-  height: 100%;
-  filter: drop-shadow(0 0 12px rgba(110, 240, 196, 0.1));
-}
-
-.gauge-center {
+.hotword-overlay {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  inset: 0;
+  z-index: 24;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(13, 57, 206, 0.2), rgba(2, 6, 20, 0.95) 62%),
+    rgba(0, 0, 0, 0.84);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 70%;
-  height: 70%;
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, rgba(15, 79, 95, 0.6), rgba(7, 39, 47, 0.8));
-  border: 1px solid rgba(110, 240, 196, 0.15);
-  backdrop-filter: blur(12px);
 }
 
-.speed-display {
+.hotword-overlay__content {
+  width: min(88vw, 860px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 20px;
 }
 
-.speed-value {
+.hotword-label {
+  margin: 0;
   font-family: "Montserrat", sans-serif;
-  font-size: clamp(2.4rem, 8vw, 4.2rem);
-  line-height: 1;
-  color: #2fd3c5;
-  font-weight: 800;
-  text-shadow: 0 0 20px rgba(110, 240, 196, 0.3);
-  letter-spacing: -0.02em;
+  font-size: clamp(1.05rem, 2.1vw, 1.4rem);
+  color: rgba(224, 235, 255, 0.92);
+  text-transform: capitalize;
+  letter-spacing: 0.06em;
 }
 
-.speed-unit {
-  margin-top: 8px;
-  letter-spacing: 0.15em;
-  color: rgba(228, 235, 255, 0.8);
-  font-size: clamp(0.65rem, 1.8vw, 1rem);
-  font-weight: 600;
-}
-
-/* Metrics Panel */
-.metrics-panel {
+.siri-wave {
+  width: min(90vw, 760px);
+  height: clamp(140px, 23vw, 190px);
+  border-radius: 22px;
   display: flex;
-  flex-direction: column;
-  gap: clamp(12px, 2vw, 16px);
-}
-
-.metric-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(12px, 2vw, 16px);
-}
-
-.metric-item {
-  padding: clamp(14px, 2.2vw, 18px);
-  background: rgba(47, 211, 197, 0.06);
-  border: 1px solid rgba(110, 240, 196, 0.2);
-  border-radius: 14px;
-  display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  backdrop-filter: blur(8px);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
+  gap: clamp(6px, 1vw, 10px);
+}
+
+.siri-bar {
+  width: clamp(6px, 0.7vw, 8px);
+  height: 22%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #57f1e0, #3f79ff 52%, #8d62ff);
+  box-shadow: 0 0 18px rgba(78, 118, 255, 0.5);
+  transform-origin: center;
+  animation: siriIdle 1.8s ease-in-out infinite;
+  animation-delay: calc(var(--bar-index, 0) * 70ms);
+}
+
+.siri-wave.is-listening .siri-bar {
+  animation-name: siriListening;
+  animation-duration: 0.95s;
+}
+
+.siri-wave.is-processing .siri-bar {
+  animation-name: siriProcessing;
+  animation-duration: 1.25s;
+}
+
+.hotword-query {
+  margin: 0;
+  min-height: 1.4em;
+  color: rgba(188, 207, 255, 0.9);
+  font-size: clamp(0.9rem, 1.5vw, 1.05rem);
+}
+
+@keyframes siriIdle {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+    opacity: 0.58;
+  }
+  50% {
+    transform: scaleY(0.65);
+    opacity: 0.88;
+  }
+}
+
+@keyframes siriListening {
+  0%,
+  100% {
+    transform: scaleY(0.25);
+  }
+  30% {
+    transform: scaleY(1.15);
+  }
+  60% {
+    transform: scaleY(0.4);
+  }
+}
+
+@keyframes siriProcessing {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(0.9);
+  }
+}
+
+@keyframes jarvisRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes jarvisPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    filter: blur(3px);
+  }
+  50% {
+    transform: scale(1.03);
+    filter: blur(2px);
+  }
+}
+
+@keyframes jarvisParticleDrift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(0.9);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translate3d(var(--drift-x, 8px), var(--drift-y, -8px), 0) scale(1.15);
+    opacity: 1;
+  }
 }
 
 .metric-item:hover {
@@ -2472,18 +2767,8 @@ select {
     padding: 10px;
   }
 
-  .tablet-stage {
-    grid-template-columns: 82px 1fr 104px;
-    padding: 0 10px;
-  }
-
-  .speed-ring {
-    width: 180px;
-    height: 180px;
-  }
-
-  .speed-value {
-    font-size: 3.6rem;
+  .jarvis-chat-wrap {
+    padding-bottom: 18px;
   }
 
   .tablet-date-number {
@@ -2506,75 +2791,98 @@ select {
 }
 
 @media (max-width: 980px) {
-  .automotive-dashboard {
-    grid-template-columns: 1fr;
-    gap: clamp(20px, 3vw, 32px);
-    max-width: 100%;
+  .tablet-topbar {
+    padding: 10px 12px 4px;
   }
 
-  .metrics-panel {
-    grid-column: 1;
+  .jarvis-prompt {
+    font-size: clamp(0.82rem, 2.2vw, 0.95rem);
+  }
+
+  .jarvis-reply {
+    font-size: clamp(0.85rem, 2.8vw, 0.95rem);
+  }
+
+  .jarvis-chat-bar {
+    max-width: 100%;
+    height: 56px;
   }
 }
 
 @media (max-width: 760px) {
-  .tablet-stage {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
-    justify-items: center;
-    padding: 8px 8px 14px;
-  }
-
-  .tablet-left-icons,
-  .tablet-right-icons {
-    flex-direction: row;
-    width: 100%;
-    justify-content: center;
-    gap: 12px;
+  .tablet-topbar {
+    align-items: center;
+    gap: 4px;
   }
 
   .startup-wordmark {
     letter-spacing: 0.14em;
   }
 
-  .automotive-dashboard {
-    grid-template-columns: 1fr;
+  .tablet-date-number {
+    font-size: 1.2rem;
   }
 
-  .tablet-center-speed {
-    min-height: 280px;
-    padding: 0 8px;
-  }
-
-  .speedometer-primary {
-    width: 100%;
-  }
-
-  .gauge-outer {
-    width: clamp(140px, 50vw, 200px);
-    height: clamp(140px, 50vw, 200px);
-  }
-
-  .metric-row {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-  }
-
-  .metric-item {
-    padding: 10px 6px;
-    gap: 4px;
-  }
-
-  .metric-value {
+  .tablet-date-month,
+  .tablet-time {
     font-size: 1rem;
   }
 
-  .metric-label {
-    font-size: 0.65rem;
+  .tablet-date-weekday {
+    font-size: 0.75rem;
   }
 
-  .metric-icon {
-    font-size: 1.2rem;
+  .tablet-stage {
+    padding: 0 8px;
+  }
+
+  .jarvis-orb {
+    width: clamp(220px, 60vw, 280px);
+    height: clamp(220px, 60vw, 280px);
+  }
+
+  .jarvis-chat-wrap {
+    padding: 0 8px 14px;
+  }
+
+  .jarvis-chat-bar {
+    padding-left: 12px;
+  }
+
+  .jarvis-chat-bar input {
+    font-size: 0.95rem;
+  }
+
+  .jarvis-chat-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .siri-wave {
+    height: 120px;
+    gap: 5px;
+  }
+
+  .app-pane#appSettings {
+    grid-template-columns: 1fr;
+  }
+
+  .voice-commands-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-block .settings-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .settings-actions {
+    justify-content: stretch;
+  }
+
+  .settings-actions .btn {
+    min-width: 0;
+    flex: 1;
   }
 }
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import logging
 import threading
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -27,11 +28,14 @@ SPOTIFY_SCOPE = " ".join(
         "user-library-modify",
         "playlist-read-private",
         "playlist-read-collaborative",
+        "user-read-recently-played",
         "playlist-modify-public",
         "playlist-modify-private",
         "app-remote-control",
     ]
 )
+
+logging.getLogger("spotipy").setLevel(logging.CRITICAL)
 
 _lock = threading.Lock()
 _client: Optional[spotipy.Spotify] = None

@@ -21,6 +21,7 @@ from Engine import db
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_SOUND_PATHS = [
+    BASE_DIR / "start_sound.mp3",
     BASE_DIR / "www" / "assets" / "jarvis_start.wav",
     BASE_DIR / "www" / "assets" / "jarvis_start.mp3",
     BASE_DIR / "www" / "assets" / "Audio" / "start_sound.mp3",
@@ -165,8 +166,21 @@ def takecommand(timeout: int = 5, phrase_time_limit: int = 7, continuous: bool =
         with sr.Microphone() as source:
             recognizer.adjust_for_ambient_noise(source, duration=0.5)
             audio = recognizer.listen(source, timeout=timeout, phrase_time_limit=phrase_time_limit)
-        query = recognizer.recognize_google(audio)
-        return query.lower().strip()
+        try:
+            query = recognizer.recognize_google(audio)
+            return query.lower().strip()
+        except sr.RequestError:
+            try:
+                query = recognizer.recognize_sphinx(audio)
+                return query.lower().strip()
+            except Exception:
+                return "none"
+        except sr.UnknownValueError:
+            try:
+                query = recognizer.recognize_sphinx(audio)
+                return query.lower().strip()
+            except Exception:
+                return "none"
 
     try:
         if continuous:
@@ -184,6 +198,97 @@ def takecommand(timeout: int = 5, phrase_time_limit: int = 7, continuous: bool =
         return "none"
     except Exception:
         return "none"
+
+
+def query_android_contacts(contact_name: str) -> list[dict[str, str]]:
+    name = str(contact_name or "").strip().lower()
+    if not name:
+        return []
+
+    try:
+        result = _run_adb([
+            "shell",
+            "content",
+            "query",
+            "--uri",
+            "content://com.android.contacts/data/phones",
+            "--projection",
+            "display_name:number",
+        ])
+    except Exception:
+        return []
+
+    if result.returncode != 0:
+        return []
+
+    contacts: list[dict[str, str]] = []
+    current: dict[str, str] = {}
+    for raw_line in (result.stdout or "").splitlines():
+        line = raw_line.strip()
+        if line.startswith("Row:"):
+            if current:
+                contacts.append(current)
+            current = {}
+            continue
+        if "display_name=" in line:
+            current["name"] = line.split("display_name=", 1)[1].strip()
+        elif "number=" in line:
+            current["number"] = line.split("number=", 1)[1].strip()
+
+    if current:
+        contacts.append(current)
+
+    matches: list[dict[str, str]] = []
+    for contact in contacts:
+        contact_name_value = str(contact.get("name") or "").lower()
+        if name == contact_name_value or name in contact_name_value:
+            matches.append(contact)
+    return matches
+
+
+def call_android_contact(contact_name: str):
+    matches = query_android_contacts(contact_name)
+    if not matches:
+        return f"No exact contact match found for {contact_name}."
+
+    target = matches[0]
+    number = str(target.get("number") or "").strip()
+    if not number:
+        return f"Contact {target.get('name', contact_name)} has no phone number."
+
+    sanitized = "".join(ch for ch in number if ch.isdigit() or ch == "+")
+    if not sanitized:
+        return f"Contact {target.get('name', contact_name)} has an invalid number."
+
+    result = _run_adb(["shell", "am", "start", "-a", "android.intent.action.CALL", "-d", f"tel:{sanitized}"])
+    if result.returncode == 0:
+        return f"Calling {target.get('name', contact_name)}."
+
+    fallback = _run_adb(["shell", "am", "start", "-a", "android.intent.action.DIAL", "-d", f"tel:{sanitized}"])
+    if fallback.returncode == 0:
+        return f"Dialer opened for {target.get('name', contact_name)}."
+
+    return f"Unable to call {target.get('name', contact_name)}."
+
+
+def call_android_number(phone_number: str):
+    number = str(phone_number or "").strip()
+    if not number:
+        return "Please provide a valid phone number."
+
+    sanitized = "".join(ch for ch in number if ch.isdigit() or ch == "+")
+    if not sanitized:
+        return "Phone number must contain digits."
+
+    result = _run_adb(["shell", "am", "start", "-a", "android.intent.action.CALL", "-d", f"tel:{sanitized}"])
+    if result.returncode == 0:
+        return f"Calling {sanitized}."
+
+    fallback = _run_adb(["shell", "am", "start", "-a", "android.intent.action.DIAL", "-d", f"tel:{sanitized}"])
+    if fallback.returncode == 0:
+        return f"Dialer opened with {sanitized}."
+
+    return f"Unable to call {sanitized}."
 
 
 def playAssistantSound():

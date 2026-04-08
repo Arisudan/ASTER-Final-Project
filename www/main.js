@@ -40,6 +40,14 @@ const state = {
   },
 };
 
+const assistantWave = {
+  stream: null,
+  audioContext: null,
+  analyser: null,
+  sourceNode: null,
+  rafId: 0,
+};
+
 function byId(id) {
   return document.getElementById(id);
 }
@@ -48,6 +56,155 @@ function announce(message) {
   const live = byId("liveRegion");
   if (live) {
     live.textContent = message || "";
+  }
+}
+
+function setAssistantResponse(text) {
+  const replyEl = byId("jarvisReply");
+  if (replyEl) {
+    replyEl.textContent = String(text || "").trim();
+  }
+}
+
+function setAssistantHeardQuery(text) {
+  const queryEl = byId("hotwordQuery");
+  if (queryEl) {
+    queryEl.textContent = String(text || "").trim() || "Say your command";
+  }
+}
+
+async function startWaveMeter() {
+  const wave = byId("siriWave");
+  if (!wave || assistantWave.stream) {
+    return;
+  }
+
+  const bars = Array.from(wave.querySelectorAll(".siri-bar"));
+  if (!bars.length || !navigator.mediaDevices?.getUserMedia) {
+    return;
+  }
+
+  try {
+    assistantWave.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    assistantWave.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    assistantWave.analyser = assistantWave.audioContext.createAnalyser();
+    assistantWave.analyser.fftSize = 256;
+    assistantWave.sourceNode = assistantWave.audioContext.createMediaStreamSource(assistantWave.stream);
+    assistantWave.sourceNode.connect(assistantWave.analyser);
+
+    const frequencyData = new Uint8Array(assistantWave.analyser.frequencyBinCount);
+    const animate = () => {
+      if (!assistantWave.analyser) {
+        return;
+      }
+
+      assistantWave.analyser.getByteFrequencyData(frequencyData);
+      const avg = frequencyData.reduce((sum, value) => sum + value, 0) / Math.max(1, frequencyData.length);
+      const normalized = Math.max(0.18, Math.min(1.25, avg / 92));
+
+      bars.forEach((bar, index) => {
+        const factor = 0.65 + ((index % 5) * 0.1);
+        const jitter = 0.8 + Math.random() * 0.5;
+        bar.style.transform = `scaleY(${Math.max(0.25, normalized * factor * jitter).toFixed(3)})`;
+      });
+
+      assistantWave.rafId = window.requestAnimationFrame(animate);
+    };
+
+    animate();
+  } catch (error) {
+    // If microphone permission is denied, keep CSS-only animation.
+  }
+}
+
+function stopWaveMeter() {
+  if (assistantWave.rafId) {
+    window.cancelAnimationFrame(assistantWave.rafId);
+    assistantWave.rafId = 0;
+  }
+  if (assistantWave.sourceNode) {
+    assistantWave.sourceNode.disconnect();
+    assistantWave.sourceNode = null;
+  }
+  if (assistantWave.analyser) {
+    assistantWave.analyser.disconnect();
+    assistantWave.analyser = null;
+  }
+  if (assistantWave.audioContext) {
+    assistantWave.audioContext.close().catch(() => undefined);
+    assistantWave.audioContext = null;
+  }
+  if (assistantWave.stream) {
+    assistantWave.stream.getTracks().forEach((track) => track.stop());
+    assistantWave.stream = null;
+  }
+}
+
+function setAssistantListeningState(mode) {
+  const wave = byId("siriWave");
+  if (!wave) {
+    return;
+  }
+
+  wave.classList.remove("is-listening", "is-processing");
+  if (mode === "listening") {
+    wave.classList.add("is-listening");
+    startWaveMeter();
+  } else if (mode === "processing") {
+    wave.classList.add("is-processing");
+  }
+}
+
+function setHotwordOverlayState(isActive, hotword = "jarvis") {
+  const overlay = byId("hotwordOverlay");
+  const label = byId("hotwordLabel");
+  const query = byId("hotwordQuery");
+  if (!overlay) {
+    return;
+  }
+
+  if (isActive) {
+    overlay.classList.remove("hidden");
+    overlay.setAttribute("aria-hidden", "false");
+    if (label) {
+      label.textContent = `${String(hotword || "jarvis").toUpperCase()} ready`;
+    }
+    if (query) {
+      query.textContent = "Say your command";
+    }
+    setAssistantListeningState("listening");
+  } else {
+    overlay.classList.add("hidden");
+    overlay.setAttribute("aria-hidden", "true");
+    setAssistantListeningState("idle");
+    stopWaveMeter();
+  }
+}
+
+async function submitDashboardPrompt(prompt, source = "typed") {
+  const query = String(prompt || "").trim();
+  if (!query) {
+    return;
+  }
+
+  const input = byId("jarvisChatInput");
+  if (input) {
+    input.value = "";
+    input.disabled = true;
+  }
+  setAssistantResponse("Thinking...");
+
+  try {
+    const result = await eel.askDashboardAssistant(query, source)();
+    const response = result?.response || "No response received.";
+    setAssistantResponse(response);
+  } catch (error) {
+    setAssistantResponse("Unable to reach assistant right now.");
+  } finally {
+    if (input) {
+      input.disabled = false;
+      input.focus();
+    }
   }
 }
 
@@ -104,7 +261,7 @@ function updateDashboardDateTime() {
     dayNumber.textContent = String(now.getDate());
   }
   if (month) {
-    month.textContent = now.toLocaleDateString("en-US", { month: "long" });
+    month.textContent = now.toLocaleDateString("en-US", { month: "long", year: "numeric" });
   }
   if (weekday) {
     weekday.textContent = now.toLocaleDateString("en-US", { weekday: "long" });
@@ -392,6 +549,7 @@ function openApp(appName, options = {}) {
       if (response && response.ok === false && response.message) {
         showToast(response.message);
       }
+      loadBabyRegionFromBackend();
     }).catch(() => undefined);
   }
 
@@ -579,6 +737,104 @@ function setBabyMonitorState(payload) {
   }
   if (outsideBadgeValue) {
     outsideBadgeValue.textContent = payload.outside ? "OUTSIDE" : "INSIDE";
+  }
+}
+
+function renderBabyRegionOverlay(points = [], isPending = false) {
+  const overlay = byId("babyRegionOverlay");
+  if (!overlay) {
+    return;
+  }
+
+  const safePoints = Array.isArray(points)
+    ? points.filter((pt) => Array.isArray(pt) && pt.length === 2)
+    : [];
+
+  if (!safePoints.length) {
+    overlay.innerHTML = "";
+    return;
+  }
+
+  const coords = safePoints
+    .map((pt) => {
+      const x = Math.max(0, Math.min(1, Number(pt[0] || 0)));
+      const y = Math.max(0, Math.min(1, Number(pt[1] || 0)));
+      return `${(x * 100).toFixed(2)},${(y * 100).toFixed(2)}`;
+    })
+    .join(" ");
+
+  const pointDots = safePoints
+    .map((pt) => {
+      const x = Math.max(0, Math.min(1, Number(pt[0] || 0))) * 100;
+      const y = Math.max(0, Math.min(1, Number(pt[1] || 0))) * 100;
+      return `<circle class="region-overlay__point" cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="1.2"></circle>`;
+    })
+    .join("");
+
+  const polygonTag = safePoints.length >= 3
+    ? `<polygon class="region-overlay__poly" points="${coords}" ${isPending ? 'stroke-dasharray="2 2"' : ""}></polygon>`
+    : `<polyline class="region-overlay__poly" points="${coords}" fill="none" stroke-dasharray="2 2"></polyline>`;
+
+  overlay.innerHTML = `${polygonTag}${pointDots}`;
+}
+
+function setRegionSelectionMode(enabled) {
+  state.regionSelectionMode = Boolean(enabled);
+  const frame = document.querySelector(".camera-frame--baby");
+  const setRegionBtn = byId("setRegionBtn");
+  frame?.classList.toggle("region-selection-active", state.regionSelectionMode);
+  if (setRegionBtn) {
+    setRegionBtn.textContent = state.regionSelectionMode ? "Cancel Region" : "Set Region";
+  }
+
+  if (!state.regionSelectionMode) {
+    state.monitorRegionPoints = [];
+  }
+}
+
+function getNormalizedImagePoint(event, image) {
+  const rect = image.getBoundingClientRect();
+  const naturalWidth = Number(image.naturalWidth || 0);
+  const naturalHeight = Number(image.naturalHeight || 0);
+
+  let renderedWidth = rect.width;
+  let renderedHeight = rect.height;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  if (naturalWidth > 0 && naturalHeight > 0) {
+    const imageRatio = naturalWidth / naturalHeight;
+    const boxRatio = rect.width / rect.height;
+    if (imageRatio > boxRatio) {
+      renderedWidth = rect.width;
+      renderedHeight = rect.width / imageRatio;
+      offsetY = (rect.height - renderedHeight) / 2;
+    } else {
+      renderedHeight = rect.height;
+      renderedWidth = rect.height * imageRatio;
+      offsetX = (rect.width - renderedWidth) / 2;
+    }
+  }
+
+  const insideX = event.clientX - rect.left - offsetX;
+  const insideY = event.clientY - rect.top - offsetY;
+  if (insideX < 0 || insideY < 0 || insideX > renderedWidth || insideY > renderedHeight) {
+    return null;
+  }
+
+  const x = Math.max(0, Math.min(1, insideX / renderedWidth));
+  const y = Math.max(0, Math.min(1, insideY / renderedHeight));
+  return [x, y];
+}
+
+async function loadBabyRegionFromBackend() {
+  try {
+    const response = await eel.getBabyMonitorRegion()();
+    if (response?.ok && Array.isArray(response.points)) {
+      renderBabyRegionOverlay(response.points);
+    }
+  } catch (error) {
+    // Keep UI responsive even when backend call fails.
   }
 }
 
@@ -1008,12 +1264,21 @@ function bindUI() {
     if (response && response.message) {
       showToast(response.message);
     }
+    await loadBabyRegionFromBackend();
   });
 
-  byId("setRegionBtn")?.addEventListener("click", () => {
-    state.regionSelectionMode = true;
+  byId("setRegionBtn")?.addEventListener("click", async () => {
+    if (state.regionSelectionMode) {
+      setRegionSelectionMode(false);
+      await loadBabyRegionFromBackend();
+      showToast("Region selection cancelled.");
+      return;
+    }
+
+    setRegionSelectionMode(true);
     state.monitorRegionPoints = [];
-    showToast("Region selection enabled. Click 4 points on baby camera feed.");
+    renderBabyRegionOverlay(state.monitorRegionPoints, true);
+    showToast("Region selection enabled. Click 4 points on camera feed.");
   });
 
   byId("resetRegionBtn")?.addEventListener("click", async () => {
@@ -1023,25 +1288,36 @@ function bindUI() {
       [0.92, 0.92],
       [0.08, 0.92],
     ];
-    await eel.setBabyMonitorRegion(resetPolygon)();
-    showToast("Monitoring region reset.");
+    const response = await eel.setBabyMonitorRegion(resetPolygon)();
+    setRegionSelectionMode(false);
+    renderBabyRegionOverlay(response?.points || resetPolygon);
+    showToast(response?.message || "Monitoring region reset.");
   });
 
-  byId("babyCameraFeed")?.addEventListener("click", async (event) => {
+  byId("babyRegionOverlay")?.addEventListener("click", async (event) => {
     if (!state.regionSelectionMode) {
       return;
     }
 
-    const image = event.currentTarget;
-    const rect = image.getBoundingClientRect();
-    const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
-    const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
-    state.monitorRegionPoints.push([x, y]);
+    const image = byId("babyCameraFeed");
+    if (!image) {
+      return;
+    }
+
+    const normalizedPoint = getNormalizedImagePoint(event, image);
+    if (!normalizedPoint) {
+      showToast("Click inside the visible camera image area.");
+      return;
+    }
+
+    state.monitorRegionPoints.push(normalizedPoint);
+    renderBabyRegionOverlay(state.monitorRegionPoints, true);
 
     if (state.monitorRegionPoints.length >= 4) {
-      await eel.setBabyMonitorRegion(state.monitorRegionPoints)();
-      state.regionSelectionMode = false;
-      showToast("Monitoring region saved.");
+      const response = await eel.setBabyMonitorRegion(state.monitorRegionPoints)();
+      setRegionSelectionMode(false);
+      renderBabyRegionOverlay(response?.points || state.monitorRegionPoints);
+      showToast(response?.message || "Monitoring region saved.");
     } else {
       showToast(`Point ${state.monitorRegionPoints.length}/4 set.`);
     }
@@ -1052,6 +1328,7 @@ function bindUI() {
     if (response && response.message) {
       showToast(response.message);
     }
+    await loadBabyRegionFromBackend();
   });
 
   byId("startEmotionBtn")?.addEventListener("click", async () => {
@@ -1122,6 +1399,7 @@ function bindUI() {
         return;
       }
       if (nav === "voice") {
+        setHotwordOverlayState(true, "jarvis");
         await eel.takeCommand()();
         return;
       }
@@ -1346,6 +1624,15 @@ function bindUI() {
       eel.setSpotifyVolume(volume)().catch(() => undefined);
     });
   }
+
+  const dashChatInput = byId("jarvisChatInput");
+  dashChatInput?.addEventListener("keydown", async (event) => {
+    if (event.key !== "Enter") {
+      return;
+    }
+    event.preventDefault();
+    await submitDashboardPrompt(dashChatInput.value, "typed");
+  });
 }
 
 // Helper function to parse duration string (M:SS or MM:SS)
@@ -1511,6 +1798,10 @@ function registerEelCallbacks() {
   eel.expose(setEmotionResult);
   eel.expose(setBabyMonitorState);
   eel.expose(showDirections);
+  eel.expose(setHotwordOverlayState);
+  eel.expose(setAssistantListeningState);
+  eel.expose(setAssistantHeardQuery);
+  eel.expose(setAssistantResponse);
 }
 
 function updateAutomotiveDashboard() {
@@ -1554,7 +1845,42 @@ function updateAutomotiveDashboard() {
   }
 }
 
+function initJarvisOrb() {
+  const orbCore = byId("jarvisCore");
+  if (!orbCore || orbCore.dataset.ready === "true") {
+    return;
+  }
+
+  const particleCount = 220;
+  for (let i = 0; i < particleCount; i += 1) {
+    const particle = document.createElement("span");
+    particle.className = "jarvis-particle";
+
+    // Keep particles mostly inside a spherical silhouette.
+    const radius = Math.sqrt(Math.random()) * 48;
+    const theta = Math.random() * Math.PI * 2;
+    const x = 50 + Math.cos(theta) * radius;
+    const y = 50 + Math.sin(theta) * radius * 0.86;
+
+    particle.style.left = `${x}%`;
+    particle.style.top = `${y}%`;
+    particle.style.setProperty("--particle-delay", `${(Math.random() * 4).toFixed(2)}s`);
+    particle.style.setProperty("--drift-x", `${(Math.random() * 18 - 9).toFixed(2)}px`);
+    particle.style.setProperty("--drift-y", `${(Math.random() * 18 - 9).toFixed(2)}px`);
+    particle.style.opacity = (0.38 + Math.random() * 0.6).toFixed(2);
+    orbCore.appendChild(particle);
+  }
+
+  const waveBars = Array.from(document.querySelectorAll(".siri-bar"));
+  waveBars.forEach((bar, index) => {
+    bar.style.setProperty("--bar-index", String(index));
+  });
+
+  orbCore.dataset.ready = "true";
+}
+
 window.addEventListener("DOMContentLoaded", async () => {
+  initJarvisOrb();
   bindPinPad();
   bindUI();
   setupMaps();
@@ -1563,6 +1889,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   await loadSettingsToUI();
   await refreshSpotifyState();
   await refreshBabyMonitorState();
+  await loadBabyRegionFromBackend();
     updateAutomotiveDashboard();
   window.setInterval(updateDashboardDateTime, 30000);
     window.setInterval(updateAutomotiveDashboard, 1500);

@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Montserrat:wght@600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="icon" type="image/x-icon" href="assets/aster_logo.ico" />
   <link rel="stylesheet" href="style.css" />
   <script type="text/javascript" src="/eel.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -72,101 +73,58 @@
           </header>
 
           <div class="tablet-stage">
-            <aside class="tablet-left-icons">
-              <div class="mini-analog-clock">
-                <span class="clock-hand clock-hand--hour"></span>
-                <span class="clock-hand clock-hand--minute"></span>
+            <section class="jarvis-hud" aria-label="Jarvis HUD">
+              <div class="jarvis-orb" id="jarvisOrb" aria-hidden="true">
+                <div class="jarvis-aura"></div>
+                <div class="jarvis-ring"></div>
+                <div class="jarvis-core" id="jarvisCore"></div>
               </div>
-              <button class="tablet-icon-btn" aria-label="Bluetooth" type="button">
-                <svg class="utility-svg" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M12.6 2.2 7.8 7l3.2 3-3.2 3 4.8 4.8V13l3.7 3.3 1.4-1.5-4.8-4.3 4.8-4.3-1.4-1.5-3.7 3.3V2.2zm-2 4.5v3.9l-1.9-1.8 1.9-2.1zm0 6.7v3.9l-1.9-2.1 1.9-1.8z"/>
-                </svg>
-              </button>
-            </aside>
-
-            <section class="tablet-center-speed">
-              <div class="automotive-dashboard">
-                <!-- Primary Speedometer -->
-                <div class="speedometer-primary">
-                  <div class="gauge-outer">
-                    <svg class="gauge-svg" viewBox="0 0 240 240" aria-hidden="true">
-                      <defs>
-                        <linearGradient id="speedGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" style="stop-color:#2fd3c5;stop-opacity:1" />
-                          <stop offset="100%" style="stop-color:#6ef0c4;stop-opacity:1" />
-                        </linearGradient>
-                      </defs>
-                      <!-- Background track -->
-                      <circle cx="120" cy="120" r="100" fill="none" stroke="rgba(244,247,255,0.08)" stroke-width="8"/>
-                      <!-- Active gauge (will be animated by JS) -->
-                      <circle id="speedGaugeFill" cx="120" cy="120" r="100" fill="none" stroke="url(#speedGradient)" stroke-width="8" stroke-dasharray="0 628" stroke-linecap="round"/>
-                      <!-- Tick marks -->
-                      <g id="speedTicks" stroke="rgba(244,247,255,0.3)" stroke-width="1">
-                        <line x1="120" y1="25" x2="120" y2="35" opacity="1"/>
-                        <line x1="190" y1="30" x2="183" y2="37" opacity="0.7"/>
-                        <line x1="215" y1="120" x2="205" y2="120" opacity="0.5"/>
-                        <line x1="190" y1="210" x2="183" y2="203" opacity="0.7"/>
-                      </g>
-                    </svg>
-                    <div class="gauge-center">
-                      <div class="speed-display">
-                        <span class="speed-value" id="dashSpeedValue">0</span>
-                        <span class="speed-unit">KM/H</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Secondary Metrics Panel -->
-                <div class="metrics-panel">
-                  <div class="metric-row">
-                    <div class="metric-item">
-                      <div class="metric-icon rpm">⚙</div>
-                      <div class="metric-value" id="dashRPM">0</div>
-                      <div class="metric-label">RPM</div>
-                    </div>
-                    <div class="metric-item">
-                      <div class="metric-icon fuel">⛽</div>
-                      <div class="metric-value" id="dashFuel">75%</div>
-                      <div class="metric-label">Fuel</div>
-                    </div>
-                  </div>
-                  <div class="metric-row">
-                    <div class="metric-item">
-                      <div class="metric-icon temp">🌡️</div>
-                      <div class="metric-value" id="dashTemp">85°</div>
-                      <div class="metric-label">Coolant</div>
-                    </div>
-                    <div class="metric-item">
-                      <div class="metric-icon battery">🔋</div>
-                      <div class="metric-value" id="dashBattery">12.5V</div>
-                      <div class="metric-label">Battery</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <p class="jarvis-prompt">Ask me Anything</p>
+              <p class="jarvis-reply" id="jarvisReply"></p>
             </section>
+          </div>
 
-            <aside class="tablet-right-icons">
-              <button class="car-tile" data-open-app="camera" type="button" aria-label="Car App">
-                <span class="car-tile-graphic" aria-hidden="true">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M5.4 14.7h13.2v2.2H5.4z"/>
-                    <path d="M7.2 14.2h9.6l-.9-3.1a2.1 2.1 0 0 0-2-1.5h-3.8c-1 0-1.8.6-2.1 1.5z"/>
-                    <circle cx="8.1" cy="17.7" r="1.6"/>
-                    <circle cx="15.9" cy="17.7" r="1.6"/>
-                    <path d="M6.5 12.5h11"/>
-                  </svg>
-                </span>
-                <span class="car-tile-label">CAR</span>
-              </button>
-              <button class="tablet-icon-btn" data-nav="voice" type="button" aria-label="Voice">
-                <svg class="utility-svg" viewBox="0 0 24 24" aria-hidden="true">
+          <div class="jarvis-chat-wrap" aria-label="Jarvis chat bar">
+            <div class="jarvis-chat-bar">
+              <input id="jarvisChatInput" type="text" placeholder="Type Here..." autocomplete="off" />
+              <button class="jarvis-chat-icon" data-nav="voice" type="button" aria-label="Voice">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M12 3.2a3 3 0 0 0-3 3V12a3 3 0 0 0 6 0V6.2a3 3 0 0 0-3-3z"/>
                   <path d="M6.5 11.7a.9.9 0 0 1 .9.9 4.6 4.6 0 0 0 9.2 0 .9.9 0 1 1 1.8 0 6.4 6.4 0 0 1-5.5 6.3v2h2.1a.9.9 0 0 1 0 1.8H9a.9.9 0 0 1 0-1.8h2.1v-2a6.4 6.4 0 0 1-5.5-6.3.9.9 0 0 1 .9-.9z"/>
                 </svg>
               </button>
-            </aside>
+              <button class="jarvis-chat-icon" type="button" aria-label="Messages">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v6A2.5 2.5 0 0 1 17.5 14H11l-4.7 4.1A.8.8 0 0 1 5 17.5V14h-1A2.5 2.5 0 0 1 1.5 11.5z"/>
+                </svg>
+              </button>
+              <button class="jarvis-chat-icon" data-nav="settings" type="button" aria-label="Settings">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M19.14 12.94a7.43 7.43 0 0 0 .05-.94 7.43 7.43 0 0 0-.05-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.12 7.12 0 0 0-1.63-.94l-.36-2.54A.5.5 0 0 0 13.9 2h-3.8a.5.5 0 0 0-.49.42l-.36 2.54a7.12 7.12 0 0 0-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 8.48a.5.5 0 0 0 .12.64l2.03 1.58a7.43 7.43 0 0 0-.05.94 7.43 7.43 0 0 0 .05.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .6.22l2.39-.96a7.12 7.12 0 0 0 1.63.94l.36 2.54a.5.5 0 0 0 .49.42h3.8a.5.5 0 0 0 .49-.42l.36-2.54a7.12 7.12 0 0 0 1.63-.94l2.39.96a.5.5 0 0 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64zM12 15.5A3.5 3.5 0 1 1 15.5 12 3.5 3.5 0 0 1 12 15.5z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div id="hotwordOverlay" class="hotword-overlay hidden" aria-hidden="true">
+            <div class="hotword-overlay__content">
+              <p class="hotword-label" id="hotwordLabel">Listening...</p>
+              <div class="siri-wave" id="siriWave" aria-hidden="true">
+                <span class="siri-bar"></span>
+                <span class="siri-bar"></span>
+                <span class="siri-bar"></span>
+                <span class="siri-bar"></span>
+                <span class="siri-bar"></span>
+                <span class="siri-bar"></span>
+                <span class="siri-bar"></span>
+                <span class="siri-bar"></span>
+                <span class="siri-bar"></span>
+                <span class="siri-bar"></span>
+                <span class="siri-bar"></span>
+                <span class="siri-bar"></span>
+              </div>
+              <p class="hotword-query" id="hotwordQuery">Say your command</p>
+            </div>
           </div>
 
           <div class="dashboard-hidden-controls hidden" aria-hidden="true">
@@ -415,7 +373,7 @@
         <section id="appCamera" class="app-pane hidden">
           <div class="baby-monitor-container">
             <header class="baby-monitor-header">
-              <h2>Baby Monitoring</h2>
+              <h2>Rear Seat Live Monitor</h2>
               <p class="baby-monitor-subtitle" id="babyMonitorStatus">Deep-learning monitor idle.</p>
             </header>
 
@@ -423,6 +381,7 @@
               <div class="camera-display-wrapper">
                 <div class="camera-frame camera-frame--baby">
                   <img id="babyCameraFeed" alt="Baby monitoring camera" />
+                  <svg id="babyRegionOverlay" class="region-overlay" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
                 </div>
               </div>
 
@@ -432,15 +391,15 @@
                   <div class="monitor-status-cards">
                     <div class="status-card" id="wakeBadge">
                       <span class="status-label">Wake</span>
-                      <span class="status-value">NO</span>
+                      <span class="status-value" id="wakeBadgeValue">NO</span>
                     </div>
                     <div class="status-card" id="moveBadge">
                       <span class="status-label">Movement</span>
-                      <span class="status-value">NO</span>
+                      <span class="status-value" id="moveBadgeValue">NO</span>
                     </div>
                     <div class="status-card" id="outsideBadge">
                       <span class="status-label">Region</span>
-                      <span class="status-value">INSIDE</span>
+                      <span class="status-value" id="outsideBadgeValue">INSIDE</span>
                     </div>
                   </div>
                 </div>
@@ -503,6 +462,52 @@
             <div class="settings-row">
               <label for="speechRateInput">Speech Rate</label>
               <input id="speechRateInput" type="number" min="120" max="260" value="180" />
+            </div>
+          </div>
+
+          <div class="settings-block settings-block--commands">
+            <h5>Voice Commands</h5>
+            <div class="voice-commands-grid">
+              <div class="voice-command-row">
+                <span class="voice-command-key">open maps</span>
+                <span class="voice-command-desc">Opens Maps in dashboard.</span>
+              </div>
+              <div class="voice-command-row">
+                <span class="voice-command-key">navigate to [place]</span>
+                <span class="voice-command-desc">Starts route guidance to destination.</span>
+              </div>
+              <div class="voice-command-row">
+                <span class="voice-command-key">call [name|number]</span>
+                <span class="voice-command-desc">Initiates contact or number call.</span>
+              </div>
+              <div class="voice-command-row">
+                <span class="voice-command-key">open notepad</span>
+                <span class="voice-command-desc">Launches Notepad on system.</span>
+              </div>
+              <div class="voice-command-row">
+                <span class="voice-command-key">open settings</span>
+                <span class="voice-command-desc">Opens in-app settings page.</span>
+              </div>
+              <div class="voice-command-row">
+                <span class="voice-command-key">open music</span>
+                <span class="voice-command-desc">Switches to Music app section.</span>
+              </div>
+              <div class="voice-command-row">
+                <span class="voice-command-key">go home</span>
+                <span class="voice-command-desc">Returns to dashboard home.</span>
+              </div>
+              <div class="voice-command-row">
+                <span class="voice-command-key">start baby monitoring</span>
+                <span class="voice-command-desc">Starts baby monitor camera mode.</span>
+              </div>
+              <div class="voice-command-row">
+                <span class="voice-command-key">start emotion mode</span>
+                <span class="voice-command-desc">Starts emotion detection mode.</span>
+              </div>
+              <div class="voice-command-row">
+                <span class="voice-command-key">play [song/artist]</span>
+                <span class="voice-command-desc">Plays music via Spotify/local.</span>
+              </div>
             </div>
           </div>
 
@@ -571,7 +576,9 @@
             </div>
           </div>
 
-          <button class="btn btn--primary" id="saveSettingsBtn" type="button">Save</button>
+          <div class="settings-actions">
+            <button class="btn btn--primary" id="saveSettingsBtn" type="button">Save</button>
+          </div>
         </section>
       </div>
     </section>
@@ -580,20 +587,14 @@
       <button data-nav="home" type="button" aria-label="Home">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5L12 3l9 7.5V21h-6v-6H9v6H3z"/></svg>
       </button>
-      <button data-nav="voice" type="button" aria-label="Voice">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a4 4 0 0 0 4-4V6a4 4 0 0 0-8 0v5a4 4 0 0 0 4 4zm-7-4h2a5 5 0 0 0 10 0h2a7 7 0 0 1-6 6.92V21h-2v-3.08A7 7 0 0 1 5 11z"/></svg>
-      </button>
       <button data-nav="music" type="button" aria-label="Music">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3v11.26A3.99 3.99 0 1 0 19 18V7h3V3zM5 14a4 4 0 1 0 4 4V8H5z"/></svg>
       </button>
-      <button data-nav="navigation" type="button" aria-label="Navigation">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>
-      </button>
-      <button data-nav="launcher" type="button" aria-label="Apps">
+      <button class="nav-apps-center" data-nav="launcher" type="button" aria-label="Apps">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg>
       </button>
-      <button data-nav="contacts" type="button" aria-label="Contacts">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm-8 1a4 4 0 1 0-4-4 4 4 0 0 0 4 4zm0 2c-3.3 0-6 1.34-6 3v1h12v-1c0-1.66-2.7-3-6-3zm8 0c-.29 0-.62.02-.97.05A5.2 5.2 0 0 1 18 18v1h6v-1c0-1.66-2.7-3-6-3z"/></svg>
+      <button data-nav="navigation" type="button" aria-label="Maps">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>
       </button>
       <button data-nav="settings" type="button" aria-label="Settings">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94a7.43 7.43 0 0 0 .05-.94 7.43 7.43 0 0 0-.05-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.12 7.12 0 0 0-1.63-.94l-.36-2.54A.5.5 0 0 0 13.9 2h-3.8a.5.5 0 0 0-.49.42l-.36 2.54a7.12 7.12 0 0 0-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.71 8.48a.5.5 0 0 0 .12.64l2.03 1.58a7.43 7.43 0 0 0-.05.94 7.43 7.43 0 0 0 .05.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32a.5.5 0 0 0 .6.22l2.39-.96a7.12 7.12 0 0 0 1.63.94l.36 2.54a.5.5 0 0 0 .49.42h3.8a.5.5 0 0 0 .49-.42l.36-2.54a7.12 7.12 0 0 0 1.63-.94l2.39.96a.5.5 0 0 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64zM12 15.5A3.5 3.5 0 1 1 15.5 12 3.5 3.5 0 0 1 12 15.5z"/></svg>

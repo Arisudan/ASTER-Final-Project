@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 from collections import Counter, deque
+import json
 import os
 import pickle
 import queue
@@ -9,8 +10,10 @@ import re
 import subprocess
 import threading
 import time
+import warnings
 from pathlib import Path
 from typing import Any
+from urllib.error import HTTPError
 from urllib.parse import quote_plus
 from urllib.request import Request, urlopen
 
@@ -19,8 +22,9 @@ import eel
 import numpy as np
 
 from Engine import db
+from Engine.ai_memory import generate_response
 from Engine.baby_monitor_dl import BabyMonitorDL
-from Engine.Features import playAssistantSound, speak, start_audio_system, takecommand
+from Engine.Features import call_android_contact, playAssistantSound, speak, start_audio_system, takecommand
 from Engine.auth import recoganize
 from Engine.command import allCommands
 from Engine.spotify_backend import (
@@ -53,6 +57,17 @@ try:
     from deepface import DeepFace  # pyright: ignore[reportMissingImports]
 except Exception:
     DeepFace = None
+
+try:
+    import mediapipe as mp  # pyright: ignore[reportMissingImports]
+except Exception:
+    mp = None
+
+warnings.filterwarnings(
+    "ignore",
+    message=r"SymbolDatabase\.GetPrototype\(\) is deprecated.*",
+    category=UserWarning,
+)
 
 BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_PIN = "2468"
@@ -92,6 +107,22 @@ _climate_state = {
 }
 
 _voice_messages = []
+
+_emotion_face_mesh = None
+if mp is not None:
+    try:
+        _emotion_face_mesh = mp.solutions.face_mesh.FaceMesh(
+            static_image_mode=False,
+            max_num_faces=1,
+            refine_landmarks=True,
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5,
+        )
+    except Exception:
+        _emotion_face_mesh = None
+
+DASHBOARD_GEMINI_API_KEY = "AIzaSyDXvvGZH-6Bk0OOLe66fquejwBfc9XhMhU"
+DASHBOARD_GEMINI_MODEL = "gemini-1.5-flash"
 
 _EMOTION_FALLBACK_MAPPINGS = {
     "happy": {
@@ -179,6 +210,84 @@ def _emotion_confidence_from_analysis(analysis: dict[str, Any] | None) -> tuple[
     return str(dominant or "neutral").lower(), confidence
 
 
+def _landmark_xy(landmarks: list[Any], index: int) -> np.ndarray:
+    point = landmarks[index]
+    return np.array([float(point.x), float(point.y)], dtype=np.float32)
+
+
+def _analyze_emotion_with_mediapipe(frame: np.ndarray) -> tuple[str, float]:
+    if _emotion_face_mesh is None:
+        return "neutral", 0.0
+
+    try:
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        result = _emotion_face_mesh.process(rgb)
+    except Exception:
+        return "neutral", 0.0
+
+    if not result or not result.multi_face_landmarks:
+        return "neutral", 0.0
+
+    landmarks = result.multi_face_landmarks[0].landmark
+
+    face_left = _landmark_xy(landmarks, 234)
+    face_right = _landmark_xy(landmarks, 454)
+    face_width = max(float(np.linalg.norm(face_right - face_left)), 1e-6)
+
+    mouth_left = _landmark_xy(landmarks, 61)
+    mouth_right = _landmark_xy(landmarks, 291)
+    upper_lip = _landmark_xy(landmarks, 13)
+    lower_lip = _landmark_xy(landmarks, 14)
+
+    left_eye_top = _landmark_xy(landmarks, 159)
+    left_eye_bottom = _landmark_xy(landmarks, 145)
+    left_eye_outer = _landmark_xy(landmarks, 33)
+    left_eye_inner = _landmark_xy(landmarks, 133)
+
+    right_eye_top = _landmark_xy(landmarks, 386)
+    right_eye_bottom = _landmark_xy(landmarks, 374)
+    right_eye_outer = _landmark_xy(landmarks, 362)
+    right_eye_inner = _landmark_xy(landmarks, 263)
+
+    left_brow = _landmark_xy(landmarks, 70)
+    right_brow = _landmark_xy(landmarks, 300)
+
+    mouth_width = float(np.linalg.norm(mouth_right - mouth_left)) / face_width
+    mouth_open = float(np.linalg.norm(lower_lip - upper_lip)) / face_width
+
+    left_eye_height = float(np.linalg.norm(left_eye_bottom - left_eye_top))
+    left_eye_width = max(float(np.linalg.norm(left_eye_inner - left_eye_outer)), 1e-6)
+    right_eye_height = float(np.linalg.norm(right_eye_bottom - right_eye_top))
+    right_eye_width = max(float(np.linalg.norm(right_eye_inner - right_eye_outer)), 1e-6)
+    eye_open = ((left_eye_height / left_eye_width) + (right_eye_height / right_eye_width)) / 2.0
+
+    left_brow_gap = max(0.0, float(left_eye_top[1] - left_brow[1]))
+    right_brow_gap = max(0.0, float(right_eye_top[1] - right_brow[1]))
+    brow_lift = (left_brow_gap + right_brow_gap) / 2.0
+
+    label = "neutral"
+    confidence = 0.45
+
+    if mouth_open >= 0.06 and eye_open >= 0.25:
+        label = "surprise"
+        confidence = min(0.88, 0.55 + (mouth_open - 0.06) * 5.0 + max(0.0, eye_open - 0.25))
+    elif mouth_width >= 0.37 and mouth_open >= 0.018:
+        label = "happy"
+        confidence = min(0.9, 0.52 + (mouth_width - 0.37) * 4.0 + max(0.0, mouth_open - 0.018) * 5.0)
+    elif brow_lift <= 0.034 and mouth_open < 0.02 and mouth_width < 0.34:
+        label = "angry"
+        confidence = min(0.82, 0.5 + (0.034 - brow_lift) * 6.0)
+    elif eye_open >= 0.29 and mouth_open >= 0.03 and mouth_width < 0.35:
+        label = "fear"
+        confidence = min(0.8, 0.5 + (eye_open - 0.29) * 3.0 + (mouth_open - 0.03) * 4.0)
+    elif mouth_open <= 0.014 and mouth_width <= 0.3:
+        label = "sad"
+        confidence = min(0.76, 0.46 + (0.3 - mouth_width) * 3.0 + (0.014 - mouth_open) * 5.0)
+
+    confidence = max(0.25, min(0.92, confidence))
+    return label, confidence
+
+
 
 def _setting_bool(key: str, default: bool = False) -> bool:
     value = str(db.get_setting(key, "true" if default else "false") or "").strip().lower()
@@ -189,9 +298,113 @@ def _http_json(url: str) -> dict[str, Any] | list[Any]:
     request = Request(url, headers={"User-Agent": "ASTER/1.0"})
     with urlopen(request, timeout=8) as response:
         payload = response.read().decode("utf-8")
-    import json
-
     return json.loads(payload)
+
+
+def _extract_gemini_text(payload: dict[str, Any]) -> str:
+    candidates = payload.get("candidates") if isinstance(payload, dict) else None
+    if not isinstance(candidates, list):
+        return ""
+
+    for candidate in candidates:
+        content = candidate.get("content") if isinstance(candidate, dict) else None
+        parts = content.get("parts") if isinstance(content, dict) else None
+        if not isinstance(parts, list):
+            continue
+        text_chunks = []
+        for part in parts:
+            if isinstance(part, dict):
+                text = str(part.get("text") or "").strip()
+                if text:
+                    text_chunks.append(text)
+        if text_chunks:
+            return "\n".join(text_chunks).strip()
+    return ""
+
+
+def _ask_dashboard_gemini(prompt: str) -> str:
+    clean_prompt = str(prompt or "").strip()
+    if not clean_prompt:
+        return "Please ask something."
+
+    endpoint = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/{DASHBOARD_GEMINI_MODEL}:generateContent"
+        f"?key={_get_dashboard_gemini_api_key()}"
+    )
+
+    payload = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": [
+                    {
+                        "text": (
+                            "You are ASTER/Jarvis dashboard assistant. Keep responses concise and actionable. "
+                            "If asked for app actions, suggest exact dashboard commands such as open maps or open phone.\n\n"
+                            f"User query: {clean_prompt}"
+                        )
+                    }
+                ],
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.5,
+            "maxOutputTokens": 350,
+        },
+    }
+
+    try:
+        request = Request(
+            endpoint,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json", "User-Agent": "ASTER/1.0"},
+            method="POST",
+        )
+        with urlopen(request, timeout=14) as response:
+            body = response.read().decode("utf-8")
+        parsed = json.loads(body)
+        text = _extract_gemini_text(parsed)
+        return text or "I did not receive a usable answer from Gemini."
+    except HTTPError as exc:
+        detail = ""
+        reason = ""
+        try:
+            raw = exc.read().decode("utf-8", errors="ignore")
+            payload = json.loads(raw) if raw else {}
+            error_info = payload.get("error", {}) if isinstance(payload, dict) else {}
+            detail = str(error_info.get("message") or "").strip()
+            details_list = error_info.get("details", []) if isinstance(error_info, dict) else []
+            if isinstance(details_list, list):
+                for item in details_list:
+                    if isinstance(item, dict):
+                        reason = str(item.get("reason") or reason)
+                        metadata = item.get("metadata") if isinstance(item.get("metadata"), dict) else {}
+                        if not reason:
+                            reason = str(metadata.get("reason") or "")
+        except Exception:
+            detail = ""
+
+        if reason == "CONSUMER_SUSPENDED":
+            raise RuntimeError("GEMINI_KEY_SUSPENDED") from exc
+        if exc.code in {401, 403}:
+            raise RuntimeError(f"GEMINI_AUTH_ERROR:{detail or exc.reason}") from exc
+        raise RuntimeError(f"GEMINI_HTTP_ERROR:{detail or exc.reason}") from exc
+    except Exception as exc:
+        raise RuntimeError(str(exc)) from exc
+
+
+def _get_dashboard_gemini_api_key() -> str:
+    # Priority: explicit DB setting -> environment -> bundled default key.
+    configured = str(db.get_setting("gemini_api_key", "") or "").strip()
+    if configured:
+        return configured
+
+    for env_name in ("GEMINI_API_KEY", "GOOGLE_API_KEY"):
+        value = str(os.getenv(env_name, "") or "").strip()
+        if value:
+            return value
+
+    return DASHBOARD_GEMINI_API_KEY
 
 
 def _adb_base_command() -> list[str]:
@@ -396,7 +609,6 @@ def _auth_result_success(user_name: str) -> dict[str, Any]:
     global _current_user
     _current_user = user_name
     _authenticated.set()
-    playAssistantSound()
     speak(f"Welcome Back, {user_name}")
     _call_js("onFaceAuthSuccess", user_name)
     _call_js("setAuthStatus", f"Welcome {user_name}. Access granted.")
@@ -500,13 +712,26 @@ def _voice_worker() -> None:
             break
 
         source = payload.get("source", "voice")
+        hotword = payload.get("hotword", "jarvis")
+        play_cue = bool(payload.get("play_cue", True))
+        _call_js("setHotwordOverlayState", True, str(hotword))
+        _call_js("setAssistantListeningState", "listening")
+        if play_cue:
+            playAssistantSound()
+        speak("At your command sir")
         query = takecommand()
         if not query or query == "none":
+            _call_js("setAssistantListeningState", "idle")
+            _call_js("setHotwordOverlayState", False, "")
             _call_js("setAuthStatus", "Voice command not detected.")
             continue
 
-        response = _handle_voice_command(query)
-        db.log_conversation(query, response, source=source)
+        _call_js("setAssistantHeardQuery", query)
+        _call_js("setAssistantListeningState", "processing")
+        response = _handle_dashboard_request(query, source=source)
+        _call_js("setAssistantResponse", response)
+        _call_js("setAssistantListeningState", "idle")
+        _call_js("setHotwordOverlayState", False, "")
 
 
 def _wake_monitor() -> None:
@@ -517,10 +742,89 @@ def _wake_monitor() -> None:
         if event is None:
             return
         if isinstance(event, dict) and event.get("type") == "wake" and _authenticated.is_set():
-            _voice_queue.put({"source": "wake"})
+            hotword = str(event.get("hotword") or "jarvis")
+            _call_js("setHotwordOverlayState", True, hotword)
+            _voice_queue.put({"source": "wake", "hotword": hotword, "play_cue": True})
 
 
-def _handle_voice_command(query: str) -> str:
+def _handle_dashboard_intents(query: str) -> str | None:
+    normalized = str(query or "").strip().lower()
+
+    if normalized.startswith("open maps") or normalized in {"maps", "open map"}:
+        openApp("maps")
+        return "Opening maps."
+
+    if normalized.startswith("open phone") or normalized.startswith("open calls") or normalized in {"phone", "calls", "open dialer"}:
+        openApp("calls")
+        return "Opening phone."
+
+    if normalized in {"open music", "music"}:
+        openApp("music")
+        return "Opening music."
+
+    if normalized.startswith("open notepad") or normalized in {"notepad", "editor"}:
+        try:
+            os.system("start notepad")
+        except Exception:
+            pass
+        return "Opening notepad."
+
+    if normalized.startswith("open settings") or normalized == "settings":
+        openApp("settings")
+        return "Opening settings."
+
+    if normalized in {"go home", "open home", "dashboard", "home"}:
+        closeApp()
+        return "Returning to dashboard."
+
+    return None
+
+
+def _handle_dashboard_request(query: str, source: str = "typed") -> str:
+    query_text = str(query or "").strip()
+    if not query_text:
+        return "Please say or type a command."
+
+    intent_response = _handle_dashboard_intents(query_text)
+    if intent_response:
+        speak(intent_response)
+        db.log_conversation(query_text, intent_response, source=source)
+        return intent_response
+
+    # Keep existing command support for media/navigation/device actions.
+    known_response = _handle_voice_command(query_text, allow_fallback=False)
+    if known_response and known_response not in {"Command processed", "none"}:
+        db.log_conversation(query_text, known_response, source=source)
+        return known_response
+
+    try:
+        gemini_response = _ask_dashboard_gemini(query_text)
+        if gemini_response:
+            speak(gemini_response)
+        db.log_conversation(query_text, gemini_response, source=source)
+        return gemini_response
+    except RuntimeError as exc:
+        error_tag = str(exc)
+        fallback_response = generate_response(query_text)
+        if not fallback_response:
+            fallback_response = "I could not reach Gemini right now, but I am still here to help with local commands."
+
+        # Keep user-facing response clean while preserving diagnostic context in logs.
+        if error_tag.startswith("GEMINI_KEY_SUSPENDED"):
+            db.log_event("warning", "Dashboard Gemini key is suspended; using local fallback response.", source="assistant")
+        elif error_tag.startswith("GEMINI_AUTH_ERROR"):
+            db.log_event("warning", f"Dashboard Gemini auth error: {error_tag}", source="assistant")
+        elif error_tag.startswith("GEMINI_HTTP_ERROR"):
+            db.log_event("warning", f"Dashboard Gemini HTTP error: {error_tag}", source="assistant")
+        else:
+            db.log_event("warning", f"Dashboard Gemini fallback: {error_tag}", source="assistant")
+
+        speak(fallback_response)
+        db.log_conversation(query_text, fallback_response, source=source)
+        return fallback_response
+
+
+def _handle_voice_command(query: str, allow_fallback: bool = True) -> str:
     normalized = str(query or "").strip().lower()
 
     if normalized.startswith("open music"):
@@ -573,14 +877,17 @@ def _handle_voice_command(query: str) -> str:
         return "Stopping camera"
 
     if normalized.startswith("call "):
-        number = "".join(ch for ch in normalized if ch.isdigit() or ch == "+")
-        if not number:
-            digits = re.findall(r"\d+", normalized)
-            number = "".join(digits)
+        target = normalized.replace("call ", "", 1).strip()
+        number = "".join(ch for ch in target if ch.isdigit() or ch == "+")
         if number:
             dialNumber(number)
             openApp("calls")
-            return f"Calling {number}"
+            return f"Calling {number}."
+
+        contact_result = call_android_contact(target)
+        if contact_result:
+            openApp("calls")
+            return contact_result
 
     if normalized in {"end call", "hang up", "hangup"}:
         endCall()
@@ -590,6 +897,9 @@ def _handle_voice_command(query: str) -> str:
         openDialer()
         openApp("calls")
         return "Opening dialer"
+
+    if not allow_fallback:
+        return "none"
 
     try:
         return allCommands(query, source="voice")
@@ -624,6 +934,7 @@ def _emotion_worker() -> None:
         {
             "ok": True,
             "stage": "analyzing",
+            "engine": "deepface" if DeepFace is not None else ("mediapipe" if _emotion_face_mesh is not None else "none"),
             "emotion": "neutral",
             "smoothed_emotion": "neutral",
             "confidence": 0.0,
@@ -632,6 +943,18 @@ def _emotion_worker() -> None:
             "message": "Camera started. Analyzing expression...",
         },
     )
+
+    if DeepFace is None and _emotion_face_mesh is None:
+        _call_js(
+            "setEmotionResult",
+            {
+                "ok": False,
+                "message": "No emotion analyzer available. Install deepface or mediapipe in the selected environment.",
+            },
+        )
+        _release_camera("emotion")
+        _emotion_running.clear()
+        return
 
     try:
         while sample_count < sample_target and time.time() < deadline and not _camera_stop_event.is_set():
@@ -645,15 +968,20 @@ def _emotion_worker() -> None:
             _call_js("updateCameraFrame", "emotion", _encode_frame(preview))
             emotion = "neutral"
             frame_confidence = 0.0
+            engine = "none"
             if DeepFace is not None:
                 try:
                     analysis = DeepFace.analyze(preview, actions=["emotion"], enforce_detection=False, silent=True)
                     if isinstance(analysis, list):
                         analysis = analysis[0] if analysis else {}
                     emotion, frame_confidence = _emotion_confidence_from_analysis(analysis if isinstance(analysis, dict) else {})
+                    engine = "deepface"
                 except Exception:
                     emotion = "neutral"
                     frame_confidence = 0.0
+            elif _emotion_face_mesh is not None:
+                emotion, frame_confidence = _analyze_emotion_with_mediapipe(preview)
+                engine = "mediapipe"
 
             sample_count += 1
             emotion_samples.append(emotion)
@@ -675,6 +1003,7 @@ def _emotion_worker() -> None:
                 {
                     "ok": True,
                     "stage": "analyzing",
+                    "engine": engine,
                     "emotion": emotion,
                     "smoothed_emotion": most_common_emotion,
                     "confidence": round(avg_confidence, 3),
@@ -742,6 +1071,7 @@ def _emotion_worker() -> None:
             {
                 "ok": True,
                 "stage": "done",
+                "engine": "deepface" if DeepFace is not None else "mediapipe",
                 "emotion": final_label,
                 "smoothed_emotion": final_label,
                 "confidence": round(final_confidence, 3),
@@ -874,6 +1204,14 @@ def setBabyMonitorRegion(points: list[list[float]]) -> dict[str, Any]:
     return {
         "ok": True,
         "message": "Monitoring region updated.",
+        "points": _baby_monitor_dl.get_region_points(),
+    }
+
+
+@eel.expose
+def getBabyMonitorRegion() -> dict[str, Any]:
+    return {
+        "ok": True,
         "points": _baby_monitor_dl.get_region_points(),
     }
 
@@ -1074,8 +1412,15 @@ def navigateTo(place: str) -> dict[str, Any]:
 
 @eel.expose
 def takeCommand() -> str:
-    _voice_queue.put({"source": "ui"})
+    _voice_queue.put({"source": "ui", "hotword": "jarvis", "play_cue": True})
     return "listening"
+
+
+@eel.expose
+def askDashboardAssistant(query: str, source: str = "typed") -> dict[str, Any]:
+    response = _handle_dashboard_request(query, source=source)
+    _call_js("setAssistantResponse", response)
+    return {"ok": True, "response": response}
 
 
 @eel.expose
@@ -1159,6 +1504,7 @@ def start(wake_queue=None) -> None:
     db.init_db()
     db.start_background_workers()
     start_audio_system()
+    playAssistantSound()
 
     eel.init("www")
     _start_background_threads()
