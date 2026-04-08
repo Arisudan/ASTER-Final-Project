@@ -86,6 +86,7 @@ _camera_owner: str | None = None
 _camera_stop_event = threading.Event()
 _baby_monitor_running = threading.Event()
 _emotion_running = threading.Event()
+_emotion_monitor_running = threading.Event()
 _baby_monitor_dl = BabyMonitorDL(db.get_all_settings())
 _baby_last_state = {
     "wake_up": False,
@@ -1089,7 +1090,7 @@ def _emotion_worker() -> None:
 
 def _camera_stream_worker(owner: str, running_event: threading.Event) -> None:
     try:
-        while not _camera_stop_event.is_set():
+        while running_event.is_set() and not _camera_stop_event.is_set():
             if _camera_capture is None:
                 break
             ok, frame = _camera_capture.read()
@@ -1185,11 +1186,74 @@ def startBabyMonitoring() -> dict[str, Any]:
 
 
 @eel.expose
+def startEmotionMonitoring() -> dict[str, Any]:
+    if _emotion_running.is_set():
+        return {"ok": False, "message": "Emotion analysis is already running."}
+
+    if _emotion_monitor_running.is_set():
+        return {"ok": True, "message": "Emotion monitoring is already active."}
+
+    if _baby_monitor_running.is_set():
+        _release_camera("baby-monitor")
+        _baby_monitor_running.clear()
+        time.sleep(0.12)
+
+    camera_index = int(float(db.get_setting("driver_monitor_camera_index", "0") or 0))
+    if camera_index < 0 or camera_index > 1:
+        camera_index = 0
+
+    ready, message = _claim_camera("emotion", camera_index)
+    if not ready:
+        return {"ok": False, "message": message}
+
+    _emotion_monitor_running.set()
+    threading.Thread(target=_camera_stream_worker, args=("emotion", _emotion_monitor_running), daemon=True).start()
+    _call_js(
+        "setEmotionResult",
+        {
+            "ok": True,
+            "stage": "monitoring",
+            "message": "Emotion camera monitoring started.",
+            "sample_count": 0,
+            "sample_target": 0,
+            "confidence": 0.0,
+            "emotion": "neutral",
+            "smoothed_emotion": "neutral",
+        },
+    )
+    return {"ok": True, "message": "Emotion camera monitoring started."}
+
+
+@eel.expose
+def stopEmotionMonitoring() -> dict[str, Any]:
+    _emotion_monitor_running.clear()
+    if _emotion_running.is_set():
+        return {"ok": False, "message": "Emotion analysis is running. Please wait for completion."}
+
+    _release_camera("emotion")
+    _call_js(
+        "setEmotionResult",
+        {
+            "ok": True,
+            "stage": "idle",
+            "message": "Emotion camera monitoring stopped.",
+            "sample_count": 0,
+            "sample_target": 0,
+            "confidence": 0.0,
+            "emotion": "neutral",
+            "smoothed_emotion": "neutral",
+        },
+    )
+    return {"ok": True, "message": "Emotion camera monitoring stopped."}
+
+
+@eel.expose
 def stopCamera() -> dict[str, Any]:
     _release_camera("baby-monitor")
     _release_camera("emotion")
     _release_camera("face-auth")
     _baby_monitor_running.clear()
+    _emotion_monitor_running.clear()
     return {"ok": True, "message": "Camera stopped."}
 
 
@@ -1225,6 +1289,10 @@ def startEmotionDetection() -> dict[str, Any]:
         _release_camera("baby-monitor")
         _baby_monitor_running.clear()
         time.sleep(0.12)
+
+    if _emotion_monitor_running.is_set():
+        _emotion_monitor_running.clear()
+        time.sleep(0.08)
 
     threading.Thread(target=_emotion_worker, daemon=True).start()
     return {"ok": True, "message": "Emotion detection started."}

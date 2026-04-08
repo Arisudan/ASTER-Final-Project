@@ -677,20 +677,23 @@ function setEmotionResult(payload) {
   }
 
   const stage = payload.stage === "done" ? "Detected" : "Analyzing";
+  const stageName = payload.stage === "monitoring"
+    ? "Monitoring"
+    : (payload.stage === "done" ? "Detected" : "Analyzing");
   const emotionLabel = String(payload.smoothed_emotion || payload.emotion || "neutral");
   const confidence = Number(payload.confidence || 0);
   const sampleCount = Number(payload.sample_count || 0);
   const sampleTarget = Number(payload.sample_target || 0);
 
   state.emotion = {
-    stage,
+    stage: stageName,
     confidence,
     sampleCount,
     sampleTarget,
   };
 
   status.textContent = payload.message || `Emotion: ${emotionLabel}`;
-  if (stageChip) stageChip.textContent = stage;
+  if (stageChip) stageChip.textContent = stageName;
   if (confidenceChip) confidenceChip.textContent = `Confidence: ${Math.round(confidence * 100)}%`;
   if (sampleChip) sampleChip.textContent = `Samples: ${sampleCount}/${sampleTarget || "?"}`;
   if (detail) {
@@ -1329,6 +1332,24 @@ function bindUI() {
       showToast(response.message);
     }
     await loadBabyRegionFromBackend();
+  });
+
+  byId("startEmotionMonitorBtn")?.addEventListener("click", async () => {
+    try {
+      const response = await eel.startEmotionMonitoring()();
+      showToast(response?.message || "Emotion camera monitoring started.");
+    } catch (error) {
+      showToast("Failed to start emotion monitoring.");
+    }
+  });
+
+  byId("stopEmotionMonitorBtn")?.addEventListener("click", async () => {
+    try {
+      const response = await eel.stopEmotionMonitoring()();
+      showToast(response?.message || "Emotion camera monitoring stopped.");
+    } catch (error) {
+      showToast("Failed to stop emotion monitoring.");
+    }
   });
 
   byId("startEmotionBtn")?.addEventListener("click", async () => {
