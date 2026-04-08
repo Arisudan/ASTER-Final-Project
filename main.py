@@ -123,7 +123,6 @@ if mp is not None:
     except Exception:
         _emotion_face_mesh = None
 
-DASHBOARD_GEMINI_API_KEY = "AIzaSyDXvvGZH-6Bk0OOLe66fquejwBfc9XhMhU"
 DASHBOARD_GEMINI_MODEL = "gemini-1.5-flash"
 
 _EMOTION_FALLBACK_MAPPINGS = {
@@ -343,9 +342,13 @@ def _ask_dashboard_gemini(prompt: str) -> str:
     if not clean_prompt:
         return "Please ask something."
 
+    api_key = _get_dashboard_gemini_api_key()
+    if not api_key:
+        raise RuntimeError("GEMINI_AUTH_ERROR:Missing API key")
+
     endpoint = (
         f"https://generativelanguage.googleapis.com/v1beta/models/{DASHBOARD_GEMINI_MODEL}:generateContent"
-        f"?key={_get_dashboard_gemini_api_key()}"
+        f"?key={api_key}"
     )
 
     payload = {
@@ -410,7 +413,7 @@ def _ask_dashboard_gemini(prompt: str) -> str:
 
 
 def _get_dashboard_gemini_api_key() -> str:
-    # Priority: explicit DB setting -> environment -> bundled default key.
+    # Priority: explicit DB setting -> environment.
     configured = str(db.get_setting("gemini_api_key", "") or "").strip()
     if configured:
         return configured
@@ -420,7 +423,7 @@ def _get_dashboard_gemini_api_key() -> str:
         if value:
             return value
 
-    return DASHBOARD_GEMINI_API_KEY
+    return ""
 
 
 def _adb_base_command() -> list[str]:
