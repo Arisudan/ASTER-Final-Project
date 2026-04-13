@@ -232,47 +232,79 @@ button {
   opacity: 0.86;
 }
 
-.startup-loader {
+.svg-frame {
   position: relative;
-  width: clamp(220px, 32vw, 340px);
-  height: clamp(220px, 32vw, 340px);
+  width: clamp(260px, 38vw, 455px);
+  height: clamp(260px, 38vw, 455px);
   margin-top: clamp(4px, 1vw, 10px);
+  transform-style: preserve-3d;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: change-view 2s ease-in infinite;
 }
 
-.startup-loader-ring {
+#Loader svg {
   position: absolute;
   inset: 0;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  filter: drop-shadow(0 0 10px rgba(0, 170, 255, 0.35));
-  animation: startupRingSpin 2.8s linear infinite;
+  width: 100%;
+  height: 100%;
+  transition: 0.5s;
+  transform-origin: center;
+  fill: none;
+  animation: change-view 5s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 12px #00aaff);
 }
 
-.startup-loader-ring--outer {
-  inset: 0;
-  border-top-color: rgba(0, 170, 255, 0.92);
-  border-right-color: rgba(0, 170, 255, 0.16);
+#Loader #big-centro,
+#Loader #outter1,
+#Loader #solo-lines,
+#Loader #center,
+#Loader #outter-center,
+#Loader #bottom-dots,
+#Loader #center-lines,
+#Loader #squares,
+#Loader #top-dots {
+  transform-origin: center;
+  animation: rotate 4s ease-in-out infinite alternate;
 }
 
-.startup-loader-ring--mid {
-  inset: 14%;
-  animation-duration: 2.2s;
-  animation-direction: reverse;
-  border-left-color: rgba(0, 170, 255, 0.9);
-  border-bottom-color: rgba(0, 170, 255, 0.18);
+#Loader #big-centro {
+  animation-delay: -1.5s;
 }
 
-.startup-loader-ring--inner {
-  inset: 30%;
-  animation-duration: 3.2s;
-  border-top-color: rgba(255, 255, 255, 0.82);
-  border-left-color: rgba(0, 170, 255, 0.22);
+#Loader #outter1 {
+  animation-delay: -1.2s;
 }
 
-@keyframes startupRingSpin {
-  from {
-    transform: rotate(0deg);
+#Loader #center {
+  animation-delay: -2.2s;
+}
+
+#Loader #bottom-dots,
+#Loader #top-dots {
+  animation-duration: 7s;
+}
+
+#Loader #center-lines,
+#Loader #outter-center {
+  animation-duration: 6s;
+  animation-delay: -3s;
+}
+
+@keyframes change-view {
+  0%,
+  50% {
+    transform: rotate(0deg) skew(0deg) translateX(calc(0 * var(--i))) translateY(calc(0px * var(--i)));
   }
+
+  70%,
+  100% {
+    transform: rotate(-80deg) skew(30deg) translateX(calc(45px * var(--i))) translateY(calc(-35px * var(--i)));
+  }
+}
+
+@keyframes rotate {
   to {
     transform: rotate(360deg);
   }
