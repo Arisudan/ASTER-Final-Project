@@ -47,6 +47,8 @@ const assistantWave = {
   mode: "idle",
 };
 
+const TRANSPARENT_PIXEL = "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
+
 function setSiriWaveVisualMode(mode) {
   const wave = byId("siriWave");
   if (!wave) {
@@ -684,18 +686,24 @@ function updateCameraFrame(owner, frameDataUrl) {
 }
 
 function onFaceAuthSuccess(userName) {
-  setAuthStatus(`Welcome ${userName || "Driver"}. Access granted.`);
+  setAuthStatus("Face Authentication Successful");
   setAuthenticated(true);
   byId("authCard")?.classList.add("hidden");
   byId("pinPanel")?.classList.add("hidden");
   setFaceAuthVisual("success");
-  announce(`Welcome ${userName || "Driver"}`);
+  announce("Face Authentication Successful");
+  setAssistantResponse("Hi Welcome back sir");
 
   window.setTimeout(() => {
+    setAuthStatus("Hi Welcome back sir");
     setFaceAuthVisual("greet");
     window.setTimeout(() => {
       showScreen(SCREENS.dashboard);
       setFaceAuthVisual("auth");
+      const authFeed = byId("authCameraFeed");
+      if (authFeed) {
+        authFeed.src = TRANSPARENT_PIXEL;
+      }
     }, 1200);
   }, 900);
 }
