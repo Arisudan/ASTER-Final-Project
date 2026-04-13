@@ -15,6 +15,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/siriwave/dist/siriwave.umd.min.js"></script>
   <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+  <script defer src="script.js"></script>
   <script defer src="main.js"></script>
 </head>
 <body data-mode="driving">
@@ -277,10 +278,15 @@
 
           <div class="tablet-stage">
             <section class="jarvis-hud" aria-label="Jarvis HUD">
-              <div class="jarvis-hero" aria-hidden="true">
-                <div class="jarvis-hero-line"></div>
-                <div class="jarvis-hero-line jarvis-hero-line--mid"></div>
-                <div class="jarvis-hero-line"></div>
+              <div class="legacy-globe" aria-hidden="true">
+                <canvas id="canvasOne" width="500" height="420"></canvas>
+                <div id="JarvisHood">
+                  <div class="square">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                </div>
               </div>
               <p class="jarvis-prompt">Ask me Anything</p>
               <p class="jarvis-reply" id="jarvisReply"></p>
