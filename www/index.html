@@ -14,6 +14,7 @@
   <script type="text/javascript" src="/eel.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/siriwave/dist/siriwave.umd.min.js"></script>
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
   <script defer src="main.js"></script>
 </head>
 <body data-mode="driving">
@@ -28,10 +29,24 @@
         </div>
         <h1 class="startup-wordmark">ASTER</h1>
         <p class="startup-tagline">Dynamic Prism Automotive Intelligence</p>
+        <div id="Loader" class="startup-loader" aria-hidden="true">
+          <div class="startup-loader-ring startup-loader-ring--outer"></div>
+          <div class="startup-loader-ring startup-loader-ring--mid"></div>
+          <div class="startup-loader-ring startup-loader-ring--inner"></div>
+        </div>
       </div>
     </section>
 
     <section id="authScreen" class="screen">
+      <div id="FaceAuth" class="auth-visual" aria-hidden="true">
+        <lottie-player src="https://assets2.lottiefiles.com/temp/lf20_XcJCfR.json" background="transparent" speed="1" style="width: 300px; height: 300px;" loop autoplay></lottie-player>
+      </div>
+      <div id="FaceAuthSuccess" class="auth-visual hidden" aria-hidden="true">
+        <lottie-player src="https://assets1.lottiefiles.com/packages/lf20_lk80fpsm.json" background="transparent" speed="1" style="width: 300px; height: 300px;" loop autoplay></lottie-player>
+      </div>
+      <div id="HelloGreet" class="auth-visual hidden" aria-hidden="true">
+        <lottie-player src="https://lottie.host/f60d18d4-5199-412c-b687-e5e63ae38f75/CoqjMcJIx0.json" background="transparent" speed="1" style="width: 300px; height: 300px;" loop autoplay></lottie-player>
+      </div>
       <div id="authCard" class="auth-card panel">
         <h2>Face Authentication</h2>
         <p id="authStatus">Preparing face authentication...</p>

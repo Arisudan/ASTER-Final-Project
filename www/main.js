@@ -385,6 +385,16 @@ function showPinPanel() {
   byId("pinPanel")?.classList.remove("hidden");
 }
 
+function setFaceAuthVisual(stage) {
+  const faceAuth = byId("FaceAuth");
+  const faceAuthSuccess = byId("FaceAuthSuccess");
+  const helloGreet = byId("HelloGreet");
+
+  if (faceAuth) faceAuth.classList.toggle("hidden", stage !== "auth");
+  if (faceAuthSuccess) faceAuthSuccess.classList.toggle("hidden", stage !== "success");
+  if (helloGreet) helloGreet.classList.toggle("hidden", stage !== "greet");
+}
+
 function setAuthenticated(isAuth) {
   state.authenticated = isAuth;
   const navEl = document.querySelector(".bottom-nav");
@@ -676,13 +686,23 @@ function updateCameraFrame(owner, frameDataUrl) {
 function onFaceAuthSuccess(userName) {
   setAuthStatus(`Welcome ${userName || "Driver"}. Access granted.`);
   setAuthenticated(true);
-  showScreen(SCREENS.dashboard);
-  showFaceAuthPanel();
+  byId("authCard")?.classList.add("hidden");
+  byId("pinPanel")?.classList.add("hidden");
+  setFaceAuthVisual("success");
   announce(`Welcome ${userName || "Driver"}`);
+
+  window.setTimeout(() => {
+    setFaceAuthVisual("greet");
+    window.setTimeout(() => {
+      showScreen(SCREENS.dashboard);
+      setFaceAuthVisual("auth");
+    }, 1200);
+  }, 900);
 }
 
 function onFaceAuthFailed(message) {
   setAuthStatus(message || "Face not recognized. Use PIN fallback.");
+  setFaceAuthVisual("auth");
   showFaceAuthPanel();
 }
 
@@ -1793,10 +1813,12 @@ function renderPlaylistView(playlistName, tracks, playlistUri) {
 
 async function startupSequence() {
   showScreen(SCREENS.startup);
+  setFaceAuthVisual("auth");
   updateDashboardDateTime();
 
   await new Promise((resolve) => window.setTimeout(resolve, 2400));
   showScreen(SCREENS.auth);
+  setFaceAuthVisual("auth");
   setAuthStatus("Preparing face authentication...");
 
   await eel.init()();

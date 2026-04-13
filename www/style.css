@@ -232,6 +232,70 @@ button {
   opacity: 0.86;
 }
 
+.startup-loader {
+  position: relative;
+  width: clamp(220px, 32vw, 340px);
+  height: clamp(220px, 32vw, 340px);
+  margin-top: clamp(4px, 1vw, 10px);
+}
+
+.startup-loader-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  filter: drop-shadow(0 0 10px rgba(0, 170, 255, 0.35));
+  animation: startupRingSpin 2.8s linear infinite;
+}
+
+.startup-loader-ring--outer {
+  inset: 0;
+  border-top-color: rgba(0, 170, 255, 0.92);
+  border-right-color: rgba(0, 170, 255, 0.16);
+}
+
+.startup-loader-ring--mid {
+  inset: 14%;
+  animation-duration: 2.2s;
+  animation-direction: reverse;
+  border-left-color: rgba(0, 170, 255, 0.9);
+  border-bottom-color: rgba(0, 170, 255, 0.18);
+}
+
+.startup-loader-ring--inner {
+  inset: 30%;
+  animation-duration: 3.2s;
+  border-top-color: rgba(255, 255, 255, 0.82);
+  border-left-color: rgba(0, 170, 255, 0.22);
+}
+
+@keyframes startupRingSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.auth-visual {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.auth-card,
+.pin-card {
+  position: relative;
+  z-index: 2;
+}
+
+.auth-visual.hidden {
+  display: none;
+}
+
 .startup-sheen {
   position: absolute;
   inset: -22% -45% auto;
