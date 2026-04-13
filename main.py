@@ -74,6 +74,7 @@ DEFAULT_PIN = "2468"
 NAV_ORIGIN = (13.0827, 80.2707)
 
 _wake_queue = None
+_hotword_thread: threading.Thread | None = None
 _voice_queue: "queue.Queue[dict[str, Any]]" = queue.Queue()
 _authenticated = threading.Event()
 _auth_running = threading.Event()
@@ -736,10 +737,14 @@ def _voice_worker() -> None:
         play_cue = bool(payload.get("play_cue", True))
         _call_js("setHotwordOverlayState", True, str(hotword))
         _call_js("setAssistantListeningState", "listening")
+        _call_js("setAssistantResponse", "Listening...")
         if play_cue:
             playAssistantSound()
-        speak("At your command sir")
-        query = takecommand()
+        listen_timeout = int(float(db.get_setting("voice_listen_timeout_seconds", "6") or 6))
+        phrase_limit = int(float(db.get_setting("voice_phrase_time_limit_seconds", "12") or 12))
+        listen_timeout = max(3, min(20, listen_timeout))
+        phrase_limit = max(5, min(30, phrase_limit))
+        query = takecommand(timeout=listen_timeout, phrase_time_limit=phrase_limit)
         if not query or query == "none":
             _call_js("setAssistantListeningState", "idle")
             _call_js("setHotwordOverlayState", False, "")
@@ -748,6 +753,7 @@ def _voice_worker() -> None:
 
         _call_js("setAssistantHeardQuery", query)
         _call_js("setAssistantListeningState", "processing")
+        _call_js("setAssistantResponse", "Processing your request...")
         response = _handle_dashboard_request(query, source=source)
         _call_js("setAssistantResponse", response)
         _call_js("setAssistantListeningState", "idle")
@@ -1684,8 +1690,16 @@ def _start_background_threads() -> None:
 
 
 def start(wake_queue=None) -> None:
-    global _wake_queue
+    global _wake_queue, _hotword_thread
     _wake_queue = wake_queue
+
+    # If app is launched directly (without run.py), wire hotword loop in-process.
+    if _wake_queue is None:
+        from Engine.hotword import hotword as start_hotword_loop
+
+        _wake_queue = queue.Queue()
+        _hotword_thread = threading.Thread(target=start_hotword_loop, args=(_wake_queue,), daemon=True)
+        _hotword_thread.start()
 
     db.init_db()
     db.start_background_workers()

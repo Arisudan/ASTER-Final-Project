@@ -159,8 +159,11 @@ def play_sound(path: Path | str) -> None:
 
 
 @eel.expose
-def takecommand(timeout: int = 5, phrase_time_limit: int = 7, continuous: bool = False):
+def takecommand(timeout: int = 6, phrase_time_limit: int = 12, continuous: bool = False):
     recognizer = sr.Recognizer()
+    recognizer.dynamic_energy_threshold = True
+    recognizer.pause_threshold = 1.1
+    recognizer.non_speaking_duration = 0.5
 
     def _listen_once():
         with sr.Microphone() as source:
