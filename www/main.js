@@ -1820,22 +1820,123 @@ function renderPlaylistView(playlistName, tracks, playlistUri) {
 }
 
 async function startupSequence() {
+  // ============ ORDERED STARTUP SEQUENCE ============
+  // Step 1 (0-3s): Logo fade-in with glow animation
   showScreen(SCREENS.startup);
-  setFaceAuthVisual("auth");
-  updateDashboardDateTime();
-
-  await new Promise((resolve) => window.setTimeout(resolve, 2400));
+  const loaderEl = byId("Loader");
+  const startupLogoWrap = document.querySelector(".startup-logo-wrap");
+  const startupSheen = document.querySelector(".startup-sheen");
+  
+  // Hide loader animation
+  if (loaderEl) {
+    loaderEl.style.opacity = "0";
+    loaderEl.style.transition = "opacity 0.5s ease";
+  }
+  
+  // Animate logo sheen
+  if (startupSheen) {
+    startupSheen.style.animation = "logoSheen 2.5s ease-in-out forwards";
+  }
+  
+  await new Promise((resolve) => window.setTimeout(resolve, 3000));
+  
+  // Step 2 (3-5s): Focus logo and hide wordmark/tagline
+  if (startupLogoWrap) {
+    startupLogoWrap.classList.add("focused");
+  }
+  
+  await new Promise((resolve) => window.setTimeout(resolve, 2500));
+  
+  // Step 3 (5-8s): Transition to auth screen
   showScreen(SCREENS.auth);
   setFaceAuthVisual("auth");
-  setAuthStatus("Preparing face authentication...");
-
+  
+  // Show the FaceAuth lottie animation with entrance
+  const faceAuthEl = byId("FaceAuth");
+  if (faceAuthEl) {
+    faceAuthEl.classList.remove("hidden");
+    faceAuthEl.style.animation = "slideInDown 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards";
+  }
+  
+  // Hide camera frame and retry button, keep PIN option visible
+  const authCard = byId("authCard");
+  if (authCard) {
+    const cameraFrame = authCard.querySelector(".camera-frame");
+    const retryBtn = byId("retryFaceBtn");
+    if (cameraFrame) cameraFrame.style.display = "none";
+    if (retryBtn) retryBtn.style.display = "none";
+  }
+  
+  // Clear status and show clean message
+  setAuthStatus("");
+  
+  await new Promise((resolve) => window.setTimeout(resolve, 3000));
+  
+  // Step 4 (8-14s): Face authentication processing
+  updateDashboardDateTime();
   await eel.init()();
   const response = await eel.startFaceAuth()();
   if (response && response.ok === false && response.message) {
-    setAuthStatus(response.message);
+    // Only show error if face auth failed, otherwise keep clean
+    if (response.ok === false) {
+      setAuthStatus(response.message);
+    }
   }
+  
   await refreshAndroidDevices();
   refreshMapSizes();
+}
+
+function onFaceAuthSuccess(userName) {
+  // Step 5-7: Complete auth success animation sequence
+  
+  // Hide face auth animation and card details
+  const faceAuthEl = byId("FaceAuth");
+  const authCard = byId("authCard");
+  
+  if (faceAuthEl) faceAuthEl.classList.add("hidden");
+  if (authCard) {
+    // Hide only the camera frame and non-PIN buttons
+    const cameraFrame = authCard.querySelector(".camera-frame");
+    const retryBtn = byId("retryFaceBtn");
+    if (cameraFrame) cameraFrame.style.display = "none";
+    if (retryBtn) retryBtn.style.display = "none";
+  }
+  
+  // Show success animation tick
+  const successEl = byId("FaceAuthSuccess");
+  if (successEl) {
+    successEl.classList.remove("hidden");
+    successEl.style.animation = "scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards";
+  }
+  
+  setAuthStatus("Face Authentication Successful");
+  
+  // Brief pause before greeting (3s)
+  setTimeout(() => {
+    // Hide success animation, show greeting gesture
+    if (successEl) successEl.classList.add("hidden");
+    
+    const greetEl = byId("HelloGreet");
+    if (greetEl) {
+      greetEl.classList.remove("hidden");
+      greetEl.style.animation = "slideInUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards";
+    }
+    
+    setAuthStatus("Welcome back");
+    setAssistantResponse("Hi Welcome back sir");
+    
+    // Transition to dashboard (3s)
+    setTimeout(() => {
+      showScreen(SCREENS.dashboard);
+      state.authenticated = true;
+      setAuthenticated(true);
+      
+      // Cleanup
+      if (authCard) authCard.classList.add("hidden");
+      if (greetEl) greetEl.classList.add("hidden");
+    }, 3000);
+  }, 3000);
 }
 
 async function refreshSpotifyState() {

@@ -99,6 +99,8 @@ button {
 
 #dashboardScreen {
   padding-bottom: clamp(96px, 12vh, 120px);
+  align-items: flex-start;
+  justify-content: flex-start;
 }
 
 .screen--active {
@@ -189,6 +191,11 @@ button {
   gap: 16px;
 }
 
+.startup-logo-wrap.focused {
+  transform: scale(0.75) translateY(-60px);
+  transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 .startup-logo {
   margin: 0;
   width: clamp(148px, 22vw, 220px);
@@ -220,6 +227,14 @@ button {
     0 20px 40px rgba(6, 12, 26, 0.9);
   line-height: 1;
   white-space: nowrap;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  opacity: 1;
+}
+
+.startup-logo-wrap.focused .startup-wordmark {
+  opacity: 0;
+  transform: scale(0.8);
+  pointer-events: none;
 }
 
 .startup-tagline {
@@ -230,6 +245,13 @@ button {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   opacity: 0.86;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.startup-logo-wrap.focused .startup-tagline {
+  opacity: 0;
+  transform: scale(0.8);
+  pointer-events: none;
 }
 
 .svg-frame {
@@ -378,6 +400,78 @@ button {
   }
   100% {
     transform: rotate(-12deg) translateX(135%);
+    opacity: 0;
+  }
+}
+
+/* ============ ORDERED STARTUP SEQUENCE ANIMATIONS ============ */
+
+@keyframes logoSheen {
+  0% {
+    transform: rotate(-12deg) translateX(-130%);
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(-12deg) translateX(135%);
+    opacity: 0;
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
     opacity: 0;
   }
 }
