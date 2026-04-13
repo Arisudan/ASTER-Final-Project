@@ -113,9 +113,11 @@ def _sound_worker() -> None:
             if playsound is not None:
                 playsound(str(path))
             else:
-                import winsound
+                # winsound cannot reliably play MP3; restricting to WAV avoids system alert tones.
+                if path.suffix.lower() == ".wav":
+                    import winsound
 
-                winsound.PlaySound(str(path), winsound.SND_FILENAME)
+                    winsound.PlaySound(str(path), winsound.SND_FILENAME)
         except Exception:
             # Do not emit system error beeps on audio playback failure.
             pass

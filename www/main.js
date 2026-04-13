@@ -397,6 +397,13 @@ function setFaceAuthVisual(stage) {
   const faceAuthSuccess = byId("FaceAuthSuccess");
   const helloGreet = byId("HelloGreet");
 
+  if (stage === "none") {
+    if (faceAuth) faceAuth.classList.add("hidden");
+    if (faceAuthSuccess) faceAuthSuccess.classList.add("hidden");
+    if (helloGreet) helloGreet.classList.add("hidden");
+    return;
+  }
+
   if (faceAuth) faceAuth.classList.toggle("hidden", stage !== "auth");
   if (faceAuthSuccess) faceAuthSuccess.classList.toggle("hidden", stage !== "success");
   if (helloGreet) helloGreet.classList.toggle("hidden", stage !== "greet");
@@ -1842,7 +1849,7 @@ async function startupSequence() {
   }
 
   // Keep scanner and success/greet visuals hidden while ring runs first.
-  setFaceAuthVisual("greet");
+  setFaceAuthVisual("none");
   
   // Show the FaceAuth lottie animation with entrance
   const faceAuthEl = byId("FaceAuth");
