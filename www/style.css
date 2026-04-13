@@ -345,8 +345,8 @@ button {
 }
 
 .auth-visual lottie-player {
-  width: clamp(320px, 52vw, 760px) !important;
-  height: clamp(320px, 52vw, 760px) !important;
+  width: clamp(250px, 38vw, 520px) !important;
+  height: clamp(250px, 38vw, 520px) !important;
 }
 
 #Loader.auth-loader-mode {
@@ -357,21 +357,21 @@ button {
   z-index: 3;
   margin-top: 0;
   opacity: 1;
-  width: clamp(360px, 58vw, 800px);
-  height: clamp(360px, 58vw, 800px);
+  width: clamp(290px, 42vw, 560px);
+  height: clamp(290px, 42vw, 560px);
 }
 
 .auth-visual-status {
   position: absolute;
-  top: calc(50% + clamp(170px, 25vh, 250px));
+  top: calc(50% + clamp(138px, 21vh, 205px));
   left: 50%;
   transform: translateX(-50%);
   margin: 0;
   min-height: 1.4em;
-  width: min(94vw, 980px);
+  width: min(90vw, 760px);
   text-align: center;
   color: rgba(226, 236, 255, 0.95);
-  font-size: clamp(1.15rem, 2.1vw, 2rem);
+  font-size: clamp(1rem, 1.55vw, 1.45rem);
   font-weight: 700;
   letter-spacing: 0.01em;
   z-index: 4;
@@ -1531,18 +1531,18 @@ select {
   }
 
   .auth-visual lottie-player {
-    width: clamp(260px, 70vw, 430px) !important;
-    height: clamp(260px, 70vw, 430px) !important;
+    width: clamp(210px, 58vw, 320px) !important;
+    height: clamp(210px, 58vw, 320px) !important;
   }
 
   #Loader.auth-loader-mode {
-    width: clamp(280px, 74vw, 500px);
-    height: clamp(280px, 74vw, 500px);
+    width: clamp(230px, 62vw, 360px);
+    height: clamp(230px, 62vw, 360px);
   }
 
   .auth-visual-status {
-    top: calc(50% + clamp(130px, 24vh, 180px));
-    font-size: clamp(1rem, 3.8vw, 1.45rem);
+    top: calc(50% + clamp(118px, 21vh, 158px));
+    font-size: clamp(0.95rem, 2.8vw, 1.2rem);
   }
 }
 
