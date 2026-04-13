@@ -30,6 +30,7 @@ const state = {
   temperature: 22,
   voiceActive: false,
   voiceTranscript: [],
+  voiceCaptureSession: false,
   currentDirections: null,
   navigationActive: false,
   emotion: {
@@ -67,17 +68,37 @@ function announce(message) {
 }
 
 function setAssistantResponse(text) {
+  const responseText = String(text || "").trim();
   const replyEl = byId("jarvisReply");
   if (replyEl) {
-    replyEl.textContent = String(text || "").trim();
+    replyEl.textContent = responseText;
+  }
+
+  if (state.voiceCaptureSession && responseText && responseText.toLowerCase() !== "thinking...") {
+    addVoiceMessage("assistant", responseText);
+    state.voiceCaptureSession = false;
+    state.voiceActive = false;
+    updateVoiceUI();
   }
 }
 
 function setAssistantHeardQuery(text) {
+  const heardText = String(text || "").trim();
   const queryEl = byId("hotwordQuery");
   if (queryEl) {
-    queryEl.textContent = String(text || "").trim() || "Say your command";
+    queryEl.textContent = heardText || "Say your command";
   }
+
+  if (state.voiceCaptureSession && heardText) {
+    addVoiceMessage("user", heardText);
+  }
+}
+
+function beginVoiceCaptureSession() {
+  state.voiceCaptureSession = true;
+  state.voiceActive = true;
+  updateVoiceUI();
+  addVoiceMessage("listening", "Listening...");
 }
 
 function ensureSiriWave() {
@@ -317,6 +338,14 @@ function setAuthStatus(text) {
   if (authStatus) {
     authStatus.textContent = text;
   }
+
+  if (state.voiceCaptureSession && String(text || "").includes("Voice command not detected")) {
+    addVoiceMessage("system", "Voice command not detected.");
+    state.voiceCaptureSession = false;
+    state.voiceActive = false;
+    updateVoiceUI();
+  }
+
   announce(text);
 }
 
@@ -1421,6 +1450,7 @@ function bindUI() {
         return;
       }
       if (nav === "voice") {
+        beginVoiceCaptureSession();
         setHotwordOverlayState(true, "jarvis");
         await eel.takeCommand()();
         return;
@@ -1498,12 +1528,15 @@ function bindUI() {
 
   // Voice assistant
   byId("startListeningBtn")?.addEventListener("click", async () => {
+    beginVoiceCaptureSession();
     setHotwordOverlayState(true, "jarvis");
     try {
       await eel.takeCommand()();
-      addVoiceMessage("listening", "Listening...");
     } catch (error) {
       setHotwordOverlayState(false, "");
+      state.voiceCaptureSession = false;
+      state.voiceActive = false;
+      updateVoiceUI();
       addVoiceMessage("system", "Unable to start voice capture.");
     }
   });
