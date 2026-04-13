@@ -117,12 +117,8 @@ def _sound_worker() -> None:
 
                 winsound.PlaySound(str(path), winsound.SND_FILENAME)
         except Exception:
-            try:
-                import winsound
-
-                winsound.MessageBeep()
-            except Exception:
-                pass
+            # Do not emit system error beeps on audio playback failure.
+            pass
 
 
 def start_audio_system() -> None:
@@ -295,16 +291,15 @@ def call_android_number(phone_number: str):
 
 
 def playAssistantSound():
+    primary = BASE_DIR / "start_sound.mp3"
+    if primary.exists():
+        play_sound(primary)
+        return
+
     for sound_path in DEFAULT_SOUND_PATHS:
         if sound_path.exists():
             play_sound(sound_path)
             return
-    try:
-        import winsound
-
-        winsound.MessageBeep()
-    except Exception:
-        pass
 
 
 def hotword(wake_queue=None):

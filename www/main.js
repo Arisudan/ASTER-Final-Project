@@ -396,21 +396,10 @@ function setFaceAuthVisual(stage) {
   const faceAuth = byId("FaceAuth");
   const faceAuthSuccess = byId("FaceAuthSuccess");
   const helloGreet = byId("HelloGreet");
-  const loader = byId("Loader");
 
   if (faceAuth) faceAuth.classList.toggle("hidden", stage !== "auth");
   if (faceAuthSuccess) faceAuthSuccess.classList.toggle("hidden", stage !== "success");
   if (helloGreet) helloGreet.classList.toggle("hidden", stage !== "greet");
-
-  if (loader) {
-    if (stage === "auth") {
-      loader.style.display = "flex";
-      loader.style.opacity = "1";
-    } else {
-      loader.style.opacity = "0";
-      loader.style.display = "none";
-    }
-  }
 }
 
 function setAuthenticated(isAuth) {
@@ -1848,21 +1837,36 @@ async function startupSequence() {
   if (loaderEl && authScreen) {
     authScreen.appendChild(loaderEl);
     loaderEl.classList.add("auth-loader-mode");
+    loaderEl.style.display = "flex";
+    loaderEl.style.opacity = "1";
   }
 
-  setFaceAuthVisual("auth");
+  // Keep scanner and success/greet visuals hidden while ring runs first.
+  setFaceAuthVisual("greet");
   
   // Show the FaceAuth lottie animation with entrance
   const faceAuthEl = byId("FaceAuth");
-  if (faceAuthEl) {
-    faceAuthEl.classList.remove("hidden");
-    faceAuthEl.style.animation = "slideInDown 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards";
-  }
+  if (faceAuthEl) faceAuthEl.classList.add("hidden");
   
   // Clear status and show clean message
   setAuthStatus("");
   
+  // Ring-only phase for 3 seconds (no scanner yet).
   await new Promise((resolve) => window.setTimeout(resolve, 3000));
+
+  // Now switch from ring to scanner.
+  if (loaderEl) {
+    loaderEl.style.opacity = "0";
+    loaderEl.style.display = "none";
+  }
+
+  setFaceAuthVisual("auth");
+  if (faceAuthEl) {
+    faceAuthEl.classList.remove("hidden");
+    faceAuthEl.style.animation = "slideInDown 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards";
+  }
+
+  await new Promise((resolve) => window.setTimeout(resolve, 800));
   
   // Step 4 (8-14s): Face authentication processing
   updateDashboardDateTime();
@@ -1883,12 +1887,17 @@ function onFaceAuthSuccess(userName) {
   const faceAuthEl = byId("FaceAuth");
   const successEl = byId("FaceAuthSuccess");
   const greetEl = byId("HelloGreet");
+  const loaderEl = byId("Loader");
 
   byId("authCard")?.classList.add("hidden");
   byId("pinPanel")?.classList.add("hidden");
 
   if (faceAuthEl) {
     faceAuthEl.classList.add("hidden");
+  }
+  if (loaderEl) {
+    loaderEl.style.opacity = "0";
+    loaderEl.style.display = "none";
   }
 
   setFaceAuthVisual("success");
