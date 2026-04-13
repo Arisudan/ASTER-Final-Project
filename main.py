@@ -678,7 +678,7 @@ def _face_auth_worker() -> None:
         fallback_cascade = _load_haar_cascade() if fallback_available else None
 
         if not known_encodings:
-            _call_js("setAuthStatus", "No enrolled face profile found. Showing camera preview. Use PIN fallback.")
+            _call_js("setAuthStatus", "No enrolled face profile found. Showing camera preview.")
         elif face_recognition is None:
             _call_js("setAuthStatus", "Advanced face package unavailable. Running basic face scan...")
 
@@ -726,14 +726,14 @@ def _face_auth_worker() -> None:
                 return
 
         if not known_encodings:
-            _auth_result_fail("No enrolled face profile found. Enter PIN to continue.")
+            _auth_result_fail("No enrolled face profile found. Please retry face authentication.")
         elif face_recognition is None:
-            _auth_result_fail("Face package not available and fallback did not match. Enter PIN to continue.")
+            _auth_result_fail("Face package not available and fallback did not match. Please retry face authentication.")
         else:
-            _auth_result_fail("Face not recognized. Enter PIN to continue.")
+            _auth_result_fail("Face not recognized. Please retry face authentication.")
     except Exception as exc:
         db.log_event("warning", f"Face auth error: {exc}", source="auth")
-        _auth_result_fail("Face scan failed. Please use PIN fallback.")
+        _auth_result_fail("Face scan failed. Please retry face authentication.")
     finally:
         _release_camera("face-auth")
         _auth_running.clear()

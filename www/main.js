@@ -396,10 +396,21 @@ function setFaceAuthVisual(stage) {
   const faceAuth = byId("FaceAuth");
   const faceAuthSuccess = byId("FaceAuthSuccess");
   const helloGreet = byId("HelloGreet");
+  const loader = byId("Loader");
 
   if (faceAuth) faceAuth.classList.toggle("hidden", stage !== "auth");
   if (faceAuthSuccess) faceAuthSuccess.classList.toggle("hidden", stage !== "success");
   if (helloGreet) helloGreet.classList.toggle("hidden", stage !== "greet");
+
+  if (loader) {
+    if (stage === "auth") {
+      loader.style.display = "flex";
+      loader.style.opacity = "1";
+    } else {
+      loader.style.opacity = "0";
+      loader.style.display = "none";
+    }
+  }
 }
 
 function setAuthenticated(isAuth) {
@@ -691,7 +702,7 @@ function updateCameraFrame(owner, frameDataUrl) {
 }
 
 function onFaceAuthFailed(message) {
-  setAuthStatus(message || "Face not recognized. Use PIN fallback.");
+  setAuthStatus(message || "Face not recognized. Please retry face authentication.");
   setFaceAuthVisual("auth");
   showFaceAuthPanel();
 }
@@ -1164,7 +1175,6 @@ function bindUI() {
       setAuthStatus(response.message);
     }
   });
-  byId("showPinBtn")?.addEventListener("click", showPinPanel);
   byId("pinBackBtn")?.addEventListener("click", showFaceAuthPanel);
   byId("pinClearBtn")?.addEventListener("click", clearPin);
 
@@ -1806,13 +1816,15 @@ async function startupSequence() {
   // Step 1 (0-3s): Logo fade-in with glow animation
   showScreen(SCREENS.startup);
   const loaderEl = byId("Loader");
+  const authScreen = byId("authScreen");
   const startupLogoWrap = document.querySelector(".startup-logo-wrap");
   const startupSheen = document.querySelector(".startup-sheen");
   
   // Hide loader animation
   if (loaderEl) {
     loaderEl.style.opacity = "0";
-    loaderEl.style.transition = "opacity 0.5s ease";
+    loaderEl.style.display = "none";
+    loaderEl.style.transition = "opacity 0.3s ease";
   }
   
   // Animate logo sheen
@@ -1831,6 +1843,13 @@ async function startupSequence() {
   
   // Step 3 (5-8s): Transition to auth screen
   showScreen(SCREENS.auth);
+
+  // Reuse the startup running circle as auth-stage ring animation.
+  if (loaderEl && authScreen) {
+    authScreen.appendChild(loaderEl);
+    loaderEl.classList.add("auth-loader-mode");
+  }
+
   setFaceAuthVisual("auth");
   
   // Show the FaceAuth lottie animation with entrance
@@ -1838,15 +1857,6 @@ async function startupSequence() {
   if (faceAuthEl) {
     faceAuthEl.classList.remove("hidden");
     faceAuthEl.style.animation = "slideInDown 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards";
-  }
-  
-  // Hide camera frame and retry button, keep PIN option visible
-  const authCard = byId("authCard");
-  if (authCard) {
-    const cameraFrame = authCard.querySelector(".camera-frame");
-    const retryBtn = byId("retryFaceBtn");
-    if (cameraFrame) cameraFrame.style.display = "none";
-    if (retryBtn) retryBtn.style.display = "none";
   }
   
   // Clear status and show clean message
