@@ -1497,16 +1497,14 @@ function bindUI() {
   });
 
   // Voice assistant
-  byId("startListeningBtn")?.addEventListener("click", () => {
-    state.voiceActive = !state.voiceActive;
-    updateVoiceUI();
-    if (state.voiceActive) {
+  byId("startListeningBtn")?.addEventListener("click", async () => {
+    setHotwordOverlayState(true, "jarvis");
+    try {
+      await eel.takeCommand()();
       addVoiceMessage("listening", "Listening...");
-      setTimeout(() => {
-        addVoiceMessage("assistant", "Hello! I'm ready to help. What can I do for you?");
-        state.voiceActive = false;
-        updateVoiceUI();
-      }, 2000);
+    } catch (error) {
+      setHotwordOverlayState(false, "");
+      addVoiceMessage("system", "Unable to start voice capture.");
     }
   });
 

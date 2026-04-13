@@ -628,6 +628,7 @@ def _auth_result_success(user_name: str) -> dict[str, Any]:
     global _current_user
     _current_user = user_name
     _authenticated.set()
+    playAssistantSound()
     speak(f"Welcome Back, {user_name}")
     _call_js("onFaceAuthSuccess", user_name)
     _call_js("setAuthStatus", f"Welcome {user_name}. Access granted.")
