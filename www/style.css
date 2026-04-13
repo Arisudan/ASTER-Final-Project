@@ -336,39 +336,47 @@ button {
 
 .auth-visual {
   position: absolute;
-  top: clamp(44px, 8vh, 80px);
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   z-index: 4;
   pointer-events: none;
   opacity: 0.95;
 }
 
+.auth-visual lottie-player {
+  width: clamp(320px, 52vw, 760px) !important;
+  height: clamp(320px, 52vw, 760px) !important;
+}
+
 #Loader.auth-loader-mode {
   position: absolute;
-  top: clamp(34px, 6.5vh, 66px);
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   z-index: 3;
   margin-top: 0;
   opacity: 1;
+  width: clamp(360px, 58vw, 800px);
+  height: clamp(360px, 58vw, 800px);
 }
 
 .auth-visual-status {
   position: absolute;
-  top: clamp(332px, 45vh, 392px);
+  top: calc(50% + clamp(170px, 25vh, 250px));
   left: 50%;
   transform: translateX(-50%);
   margin: 0;
   min-height: 1.4em;
-  width: min(90vw, 560px);
+  width: min(94vw, 980px);
   text-align: center;
   color: rgba(226, 236, 255, 0.95);
-  font-size: clamp(0.95rem, 1.7vw, 1.18rem);
-  font-weight: 600;
+  font-size: clamp(1.15rem, 2.1vw, 2rem);
+  font-weight: 700;
   letter-spacing: 0.01em;
   z-index: 4;
   pointer-events: none;
+  text-shadow: 0 8px 26px rgba(0, 0, 0, 0.45);
 }
 
 .auth-card,
@@ -1523,13 +1531,18 @@ select {
   }
 
   .auth-visual lottie-player {
-    width: 210px !important;
-    height: 210px !important;
+    width: clamp(260px, 70vw, 430px) !important;
+    height: clamp(260px, 70vw, 430px) !important;
+  }
+
+  #Loader.auth-loader-mode {
+    width: clamp(280px, 74vw, 500px);
+    height: clamp(280px, 74vw, 500px);
   }
 
   .auth-visual-status {
-    top: clamp(250px, 40vh, 300px);
-    font-size: clamp(0.9rem, 1.4vw, 1rem);
+    top: calc(50% + clamp(130px, 24vh, 180px));
+    font-size: clamp(1rem, 3.8vw, 1.45rem);
   }
 }
 
