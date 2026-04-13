@@ -60,6 +60,18 @@ function canvasApp() {
 
   init();
 
+  function resizeCanvas() {
+    var size = Math.max(220, Math.floor(theCanvas.clientWidth || theCanvas.width));
+    theCanvas.width = size;
+    theCanvas.height = size;
+    displayWidth = theCanvas.width;
+    displayHeight = theCanvas.height;
+    projCenterX = displayWidth / 2;
+    projCenterY = displayHeight / 2;
+    sphereRad = Math.max(88, Math.floor(size * 0.335));
+    sphereCenterZ = -3 - sphereRad;
+  }
+
   function init() {
     wait = 1;
     count = wait - 1;
@@ -72,8 +84,7 @@ function canvasApp() {
     rgbString = "rgba(" + r + "," + g + "," + b + ",";
     particleAlpha = 1;
 
-    displayWidth = theCanvas.width;
-    displayHeight = theCanvas.height;
+    resizeCanvas();
 
     fLen = 320;
     projCenterX = displayWidth / 2;
@@ -102,6 +113,7 @@ function canvasApp() {
 
     startAnimationLoop();
     document.addEventListener("visibilitychange", handleVisibilityChange, false);
+    window.addEventListener("resize", resizeCanvas, false);
   }
 
   function startAnimationLoop() {
@@ -170,8 +182,7 @@ function canvasApp() {
     sinAngle = Math.sin(turnAngle);
     cosAngle = Math.cos(turnAngle);
 
-    context.fillStyle = "#000000";
-    context.fillRect(0, 0, displayWidth, displayHeight);
+    context.clearRect(0, 0, displayWidth, displayHeight);
 
     p = particleList.first;
     while (p != null) {
