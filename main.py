@@ -630,12 +630,22 @@ def _auth_result_success(user_name: str) -> dict[str, Any]:
     _current_user = user_name
     _authenticated.set()
     playAssistantSound()
+    
+    # Trigger the frontend animation sequence
+    _call_js("onFaceAuthSuccess", user_name)
+    
+    # Step 5 (14-17s): Success animation with voice
     _call_js("setAuthStatus", "Face Authentication Successful")
     speak("Face Authentication Successful")
-    _call_js("onFaceAuthSuccess", user_name)
-    _call_js("setAssistantResponse", "Hi Welcome back sir")
-    speak("Hi Welcome back sir")
-    _call_js("setAuthStatus", "Hi Welcome back sir")
+    
+    # Wait for success animation to complete before greeting (2.5s)
+    time.sleep(2.5)
+    
+    # Step 6 (17-20s): Greeting animation with voice  
+    _call_js("setAssistantResponse", "Welcome back sir")
+    speak("Welcome back sir")
+    _call_js("setAuthStatus", "Welcome back sir")
+    
     return {"ok": True, "user": user_name}
 
 

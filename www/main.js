@@ -341,6 +341,11 @@ function setAuthStatus(text) {
     authStatus.textContent = text;
   }
 
+  const authVisualStatus = byId("authVisualStatus");
+  if (authVisualStatus) {
+    authVisualStatus.textContent = String(text || "").trim();
+  }
+
   if (state.voiceCaptureSession && String(text || "").includes("Voice command not detected")) {
     addVoiceMessage("system", "Voice command not detected.");
     state.voiceCaptureSession = false;
@@ -683,29 +688,6 @@ function updateCameraFrame(owner, frameDataUrl) {
       emotionFeed.src = frameDataUrl;
     }
   }
-}
-
-function onFaceAuthSuccess(userName) {
-  setAuthStatus("Face Authentication Successful");
-  setAuthenticated(true);
-  byId("authCard")?.classList.add("hidden");
-  byId("pinPanel")?.classList.add("hidden");
-  setFaceAuthVisual("success");
-  announce("Face Authentication Successful");
-  setAssistantResponse("Hi Welcome back sir");
-
-  window.setTimeout(() => {
-    setAuthStatus("Hi Welcome back sir");
-    setFaceAuthVisual("greet");
-    window.setTimeout(() => {
-      showScreen(SCREENS.dashboard);
-      setFaceAuthVisual("auth");
-      const authFeed = byId("authCameraFeed");
-      if (authFeed) {
-        authFeed.src = TRANSPARENT_PIXEL;
-      }
-    }, 1200);
-  }, 900);
 }
 
 function onFaceAuthFailed(message) {
@@ -1888,55 +1870,58 @@ async function startupSequence() {
 }
 
 function onFaceAuthSuccess(userName) {
-  // Step 5-7: Complete auth success animation sequence
-  
-  // Hide face auth animation and card details
   const faceAuthEl = byId("FaceAuth");
-  const authCard = byId("authCard");
-  
-  if (faceAuthEl) faceAuthEl.classList.add("hidden");
-  if (authCard) {
-    // Hide only the camera frame and non-PIN buttons
-    const cameraFrame = authCard.querySelector(".camera-frame");
-    const retryBtn = byId("retryFaceBtn");
-    if (cameraFrame) cameraFrame.style.display = "none";
-    if (retryBtn) retryBtn.style.display = "none";
-  }
-  
-  // Show success animation tick
   const successEl = byId("FaceAuthSuccess");
-  if (successEl) {
-    successEl.classList.remove("hidden");
-    successEl.style.animation = "scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards";
+  const greetEl = byId("HelloGreet");
+
+  byId("authCard")?.classList.add("hidden");
+  byId("pinPanel")?.classList.add("hidden");
+
+  if (faceAuthEl) {
+    faceAuthEl.classList.add("hidden");
   }
-  
+
+  setFaceAuthVisual("success");
+
+  const successPlayer = successEl?.querySelector("lottie-player");
+  if (successPlayer) {
+    successPlayer.style.animation = "scaleIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards";
+  }
+
+  // Backend speaks this line; keep it visible under the tick animation.
   setAuthStatus("Face Authentication Successful");
-  
-  // Brief pause before greeting (3s)
-  setTimeout(() => {
-    // Hide success animation, show greeting gesture
-    if (successEl) successEl.classList.add("hidden");
-    
-    const greetEl = byId("HelloGreet");
-    if (greetEl) {
-      greetEl.classList.remove("hidden");
-      greetEl.style.animation = "slideInUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards";
+  announce("Face Authentication Successful");
+
+  window.setTimeout(() => {
+    setFaceAuthVisual("greet");
+
+    const greetPlayer = greetEl?.querySelector("lottie-player");
+    if (greetPlayer) {
+      greetPlayer.style.animation = "slideInUp 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards";
     }
-    
-    setAuthStatus("Welcome back");
-    setAssistantResponse("Hi Welcome back sir");
-    
-    // Transition to dashboard (3s)
-    setTimeout(() => {
+
+    // Backend speaks this line; keep it visible under the hand-wave animation.
+    setAuthStatus("Welcome back sir");
+    announce("Welcome back sir");
+
+    window.setTimeout(() => {
       showScreen(SCREENS.dashboard);
       state.authenticated = true;
       setAuthenticated(true);
-      
-      // Cleanup
-      if (authCard) authCard.classList.add("hidden");
-      if (greetEl) greetEl.classList.add("hidden");
-    }, 3000);
-  }, 3000);
+      setFaceAuthVisual("auth");
+      setAuthStatus("");
+
+      const authFeed = byId("authCameraFeed");
+      if (authFeed) {
+        authFeed.src = TRANSPARENT_PIXEL;
+      }
+
+      const jarvisReply = byId("jarvisReply");
+      if (jarvisReply) {
+        jarvisReply.textContent = "";
+      }
+    }, 2200);
+  }, 2200);
 }
 
 async function refreshSpotifyState() {
