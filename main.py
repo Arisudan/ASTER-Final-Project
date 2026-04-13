@@ -740,10 +740,10 @@ def _voice_worker() -> None:
         _call_js("setAssistantResponse", "Listening...")
         if play_cue:
             playAssistantSound()
-        listen_timeout = int(float(db.get_setting("voice_listen_timeout_seconds", "6") or 6))
-        phrase_limit = int(float(db.get_setting("voice_phrase_time_limit_seconds", "12") or 12))
-        listen_timeout = max(3, min(20, listen_timeout))
-        phrase_limit = max(5, min(30, phrase_limit))
+        listen_timeout = int(float(db.get_setting("voice_listen_timeout_seconds", "7") or 7))
+        phrase_limit = int(float(db.get_setting("voice_phrase_time_limit_seconds", "15") or 15))
+        listen_timeout = max(4, min(20, listen_timeout))
+        phrase_limit = max(10, min(30, phrase_limit))
         query = takecommand(timeout=listen_timeout, phrase_time_limit=phrase_limit)
         if not query or query == "none":
             _call_js("setAssistantListeningState", "idle")

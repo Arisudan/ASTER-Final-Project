@@ -32,8 +32,8 @@ DEFAULT_SETTINGS = {
     "android_device_serial": "",
     "android_default_package": "",
     "speech_rate": "180",
-    "voice_listen_timeout_seconds": "6",
-    "voice_phrase_time_limit_seconds": "12",
+    "voice_listen_timeout_seconds": "7",
+    "voice_phrase_time_limit_seconds": "15",
 }
 
 _log_queue: "queue.Queue[tuple[str, str, str, Optional[str]]]" = queue.Queue()
