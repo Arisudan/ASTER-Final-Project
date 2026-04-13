@@ -47,6 +47,75 @@ const assistantWave = {
   mode: "idle",
 };
 
+const legacyAssistantWave = {
+  instance: null,
+  initialized: false,
+};
+
+function showSiriWave() {
+  const oval = byId("Oval");
+  const siri = byId("SiriWave");
+  if (oval) {
+    oval.hidden = true;
+  }
+  if (siri) {
+    siri.hidden = false;
+  }
+}
+
+function ShowHood() {
+  const oval = byId("Oval");
+  const siri = byId("SiriWave");
+  if (oval) {
+    oval.hidden = false;
+  }
+  if (siri) {
+    siri.hidden = true;
+  }
+}
+
+function DisplayMessage(message) {
+  const node = byId("legacySiriMessage");
+  if (node) {
+    node.textContent = String(message || "");
+  }
+}
+
+function senderText(message) {
+  if (!message) {
+    return;
+  }
+  setAssistantHeardQuery(message);
+}
+
+function receiverText(message) {
+  if (!message) {
+    return;
+  }
+  setAssistantResponse(message);
+}
+
+function hideLoader() {
+  const loader = byId("Loader");
+  if (loader) {
+    loader.classList.add("hidden");
+  }
+  setFaceAuthVisual("auth");
+}
+
+function hideFaceAuth() {
+  setFaceAuthVisual("success");
+}
+
+function hideFaceAuthSuccess() {
+  setFaceAuthVisual("greet");
+}
+
+function hideStart() {
+  showScreen(SCREENS.dashboard);
+  ShowHood();
+}
+
 function setSiriWaveVisualMode(mode) {
   const wave = byId("siriWave");
   if (!wave) {
@@ -79,6 +148,7 @@ function setAssistantResponse(text) {
     state.voiceCaptureSession = false;
     state.voiceActive = false;
     updateVoiceUI();
+    ShowHood();
   }
 }
 
@@ -99,6 +169,7 @@ function beginVoiceCaptureSession() {
   state.voiceActive = true;
   updateVoiceUI();
   addVoiceMessage("listening", "Listening...");
+  showSiriWave();
 }
 
 function ensureSiriWave() {
@@ -131,6 +202,34 @@ function ensureSiriWave() {
   } catch (error) {
     assistantWave.instance = null;
     assistantWave.initialized = false;
+  }
+}
+
+function ensureLegacySiriWave() {
+  if (legacyAssistantWave.initialized) {
+    return;
+  }
+
+  const container = byId("legacySiriContainer");
+  const SiriWaveCtor = window.SiriWave;
+  if (!container || typeof SiriWaveCtor !== "function") {
+    return;
+  }
+
+  try {
+    legacyAssistantWave.instance = new SiriWaveCtor({
+      container,
+      width: Math.min(window.innerWidth * 0.9, 800),
+      height: 200,
+      style: "ios9",
+      amplitude: 1,
+      speed: 0.3,
+      autostart: true,
+    });
+    legacyAssistantWave.initialized = true;
+  } catch (error) {
+    legacyAssistantWave.instance = null;
+    legacyAssistantWave.initialized = false;
   }
 }
 
@@ -195,11 +294,13 @@ function setHotwordOverlayState(isActive, hotword = "jarvis") {
       query.textContent = "Say your command";
     }
     setAssistantListeningState("listening");
+    showSiriWave();
   } else {
     overlay.classList.add("hidden");
     overlay.setAttribute("aria-hidden", "true");
     setAssistantListeningState("idle");
     stopWaveMeter();
+    ShowHood();
   }
 }
 
@@ -1706,6 +1807,62 @@ function bindUI() {
     event.preventDefault();
     await submitDashboardPrompt(dashChatInput.value, "typed");
   });
+
+  const legacyInput = byId("chatbox");
+  const legacySend = byId("SendBtn");
+  const legacyMic = byId("MicBtn");
+
+  const toggleLegacyButtons = () => {
+    if (!legacyInput || !legacySend || !legacyMic) {
+      return;
+    }
+    const hasText = String(legacyInput.value || "").trim().length > 0;
+    legacySend.hidden = !hasText;
+    legacyMic.hidden = hasText;
+  };
+
+  legacyInput?.addEventListener("input", toggleLegacyButtons);
+  legacyInput?.addEventListener("keydown", async (event) => {
+    if (event.key !== "Enter") {
+      return;
+    }
+    event.preventDefault();
+    const text = String(legacyInput.value || "").trim();
+    if (!text) {
+      return;
+    }
+    showSiriWave();
+    await submitDashboardPrompt(text, "typed");
+    legacyInput.value = "";
+    toggleLegacyButtons();
+  });
+
+  legacySend?.addEventListener("click", async () => {
+    const text = String(legacyInput?.value || "").trim();
+    if (!text) {
+      return;
+    }
+    showSiriWave();
+    await submitDashboardPrompt(text, "typed");
+    if (legacyInput) {
+      legacyInput.value = "";
+    }
+    toggleLegacyButtons();
+  });
+
+  legacyMic?.addEventListener("click", async () => {
+    beginVoiceCaptureSession();
+    setHotwordOverlayState(true, "jarvis");
+    await eel.takeCommand()();
+  });
+
+  document.addEventListener("keyup", async (event) => {
+    if (event.key.toLowerCase() === "j" && event.metaKey) {
+      beginVoiceCaptureSession();
+      setHotwordOverlayState(true, "jarvis");
+      await eel.takeCommand()();
+    }
+  });
 }
 
 // Helper function to parse duration string (M:SS or MM:SS)
@@ -1877,6 +2034,15 @@ function registerEelCallbacks() {
   eel.expose(setAssistantListeningState);
   eel.expose(setAssistantHeardQuery);
   eel.expose(setAssistantResponse);
+  eel.expose(DisplayMessage);
+  eel.expose(ShowHood);
+  eel.expose(showSiriWave);
+  eel.expose(senderText);
+  eel.expose(receiverText);
+  eel.expose(hideLoader);
+  eel.expose(hideFaceAuth);
+  eel.expose(hideFaceAuthSuccess);
+  eel.expose(hideStart);
 }
 
 function updateAutomotiveDashboard() {
@@ -1956,6 +2122,16 @@ function initJarvisOrb() {
 
 window.addEventListener("DOMContentLoaded", async () => {
   initJarvisOrb();
+  ensureLegacySiriWave();
+  ShowHood();
+  if (window.jQuery && typeof window.jQuery.fn?.textillate === "function") {
+    window.jQuery(".siri-message").textillate({
+      loop: true,
+      sync: true,
+      in: { effect: "fadeInUp", sync: true },
+      out: { effect: "fadeInDown", sync: true },
+    });
+  }
   bindPinPad();
   bindUI();
   setupMaps();

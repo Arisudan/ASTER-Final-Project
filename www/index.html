@@ -8,13 +8,20 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Montserrat:wght@600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <link rel="stylesheet" href="assets/vendor/texllate/animate.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="icon" type="image/x-icon" href="assets/aster_logo.ico" />
   <link rel="stylesheet" href="style.css" />
   <script type="text/javascript" src="/eel.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+  <script src="assets/vendor/texllate/jquery.fittext.js"></script>
+  <script src="assets/vendor/texllate/jquery.lettering.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/textillate/0.4.0/jquery.textillate.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/siriwave/dist/siriwave.umd.min.js"></script>
   <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+  <script defer src="script.js"></script>
   <script defer src="main.js"></script>
 </head>
 <body data-mode="driving">
@@ -342,6 +349,34 @@
             <div id="miniMap" class="map-box"></div>
           </div>
         </div>
+      </div>
+
+      <div id="legacyHome" class="legacy-home" aria-label="Legacy Assistant Home">
+        <section id="Oval" class="legacy-home-panel">
+          <div class="legacy-canvas-wrap">
+            <canvas id="canvasOne" width="700" height="420"></canvas>
+            <div id="JarvisHood">
+              <div class="square">
+                <span class="circle"></span>
+                <span class="circle"></span>
+                <span class="circle"></span>
+              </div>
+            </div>
+          </div>
+          <h5 class="legacy-ask-text">Ask me Anything</h5>
+
+          <div id="TextInput" class="legacy-input-wrap">
+            <input type="text" class="input-field" name="chatbox" id="chatbox" placeholder="Type Here..." autocomplete="off" />
+            <button id="SendBtn" class="glow-on-hover" hidden type="button" aria-label="Send">&#10148;</button>
+            <button id="MicBtn" class="glow-on-hover" type="button" aria-label="Mic">&#127908;</button>
+            <button id="LegacySettingsBtn" class="glow-on-hover" data-nav="settings" type="button" aria-label="Settings">&#9881;</button>
+          </div>
+        </section>
+
+        <section id="SiriWave" class="legacy-home-panel" hidden>
+          <p id="legacySiriMessage" class="siri-message">Hello, I am JARVIS</p>
+          <div id="legacySiriContainer" class="legacy-siri-container"></div>
+        </section>
       </div>
     </section>
 
